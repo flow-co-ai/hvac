@@ -135,6 +135,7 @@ export async function pullGHL(today) {
     }
     return out;
   }])) || [];
+  const pipelines = (await firstThatWorks('GoHighLevel pipelines', [async () => (await ghl(`/opportunities/pipelines?locationId=${loc}`)).pipelines || []])) || [];
   const since = addDays(today, -config.ghl.message_window_days);
   const conversations = (await firstThatWorks('GoHighLevel conversations', [() => ghlConversations(loc, addDays(today, -400))])) || [];
   const recent = conversations.filter((c) => localDay(c.lastMessageDate) >= since);
@@ -148,7 +149,7 @@ export async function pullGHL(today) {
     await sleep(110);
   }
   if (failed) notes.push(`GoHighLevel messages: ${failed} conversations could not be read. First error: ${firstErr}`);
-  return { contacts, opportunities, conversations, messages, locationId: loc };
+  return { contacts, opportunities, pipelines, conversations, messages, locationId: loc };
 }
 export async function checkGHL() {
   const loc = need('GHL_LOCATION_ID');

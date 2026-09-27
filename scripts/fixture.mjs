@@ -81,8 +81,11 @@ export function makeFixture(today) {
   for (const d of dayRange(addDays(today, -120), today)) queries.forEach((q, i) => sc.push({ date: d, query: q, impressions: Math.round(rnd() * (20 - i)), clicks: rnd() < 0.1 ? 1 : 0, position: Math.max(1, 3 + i * 1.8 + (rnd() - 0.5) * 3 - daysAgo(d, today) / 60) }));
 
   const lsa = {}; for (const m of ['2026-04', '2026-05', '2026-06', '2026-07', '2026-08']) lsa[m] = Math.round(500 + rnd() * 500);
+  const pipelines = [{ id: 'pl1', name: 'Fall Tune-Up Campaign', stages: [{ id: 's1', name: 'Replied' }, { id: 's2', name: 'Booked' }, { id: 's3', name: 'Completed' }] }];
+  const opportunities = [];
+  for (let i = 0; i < 80; i++) { const c = pick(customers.slice(0, 200)); opportunities.push({ id: 'op' + i, pipelineId: 'pl1', pipelineStageId: pick(['s1', 's2', 's3']), contactId: 'ctx' + i, createdAt: iso(addDays(today, -Math.floor(rnd() * 20))) }); contacts.push({ id: 'ctx' + i, firstName: c.first_name, lastName: c.last_name, phone: '+1' + c.mobile_number, dateAdded: iso('2025-01-05'), source: 'csv_import' }); }
   contacts.push({ id: 'ct_leak', firstName: 'someone@example.test', dateAdded: iso(today), source: 'Call from 708-555-1212' });
-  return { hcp: { jobs, estimates, customers: customers.map((c) => ({ id: c.id, first_name: c.first_name || 'Pat', last_name: c.last_name || 'Lee', mobile_number: c.mobile_number, email: c.email, lead_source: null })) }, ghl: { contacts, conversations, messages, locationId: 'FAKELOCATION' }, win: { gads, meta, metaTotal, gbp, reviews, totals, sc }, lsa };
+  return { hcp: { jobs, estimates, customers: customers.map((c) => ({ id: c.id, first_name: c.first_name || 'Pat', last_name: c.last_name || 'Lee', mobile_number: c.mobile_number, email: c.email, lead_source: null })) }, ghl: { contacts, conversations, messages, opportunities, pipelines, locationId: 'FAKELOCATION' }, win: { gads, meta, metaTotal, gbp, reviews, totals, sc }, lsa };
 }
 const daysAgo = (d, today) => Math.round((new Date(today) - new Date(d)) / 864e5);
 let jn = 0;
@@ -96,5 +99,6 @@ function job(c, t, day, today) {
     created_at: iso(addDays(day, -Math.floor(rnd() * 3))), schedule: { scheduled_start: iso(day), scheduled_end: iso(day, 17) },
     work_timestamps: { completed_at: done ? iso(day, 16) : null },
     total_amount: Math.round((t[2] + rnd() * (t[3] - t[2])) * 100),
+    assigned_employees: [pick([{ first_name: 'Nick', last_name: 'R' }, { first_name: 'Juan', last_name: 'M' }, { first_name: 'Gene', last_name: 'T' }, { first_name: 'Arnie', last_name: 'K' }, { first_name: 'Miguel', last_name: 'S' }])],
   };
 }
