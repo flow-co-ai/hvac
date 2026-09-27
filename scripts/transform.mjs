@@ -268,6 +268,30 @@ export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
       (String(m.direction).toLowerCase() === 'inbound' && /CALL/.test(String(m.messageType || m.type).toUpperCase()) && /complete|answered/.test(String(m.meta?.call?.status || m.status).toLowerCase()))));
     if (human) resp.push((new Date(human.dateAdded) - t0) / 60000); else noReply++;
   }
+  // what happened to each paid lead in the message window
+  const OUT = ['Booked a job', 'In Housecall Pro, no job', 'Answered, not booked', 'Missed, followed up, not booked', 'Missed, never followed up', 'No call, replied to', 'No call, no reply'];
+  const hcpPh = new Set(), hcpEm = new Set(); for (const c of [...(hcp.customers || []), ...[...byCust.values()].map((x) => ({ mobile_number: x.keys.ph[0], email: x.keys.em }))]) { const k = customerKeys(c); k.ph.forEach((p) => hcpPh.add(p)); if (k.em) hcpEm.add(k.em); }
+  const outcome = {}; const outList = [];
+  for (const c of ghl.contacts || []) {
+    const ch = contactChannel(c); if (!PAID.includes(ch)) continue;
+    const ld = localDay(c.dateAdded || c.dateCreated); if (!ld || ld < since) continue;
+    const cid = phoneIdx.get(phone10(c.phone)) || emailIdx.get(email(c.email)); const cust = cid && byCust.get(cid);
+    const ms = (byContact.get(c.id) || []).sort((x, y) => new Date(x.dateAdded) - new Date(y.dateAdded));
+    const isCall = (m) => /CALL/.test(String(m.messageType || m.type).toUpperCase());
+    const inb = ms.filter((m) => String(m.direction).toLowerCase() === 'inbound' && isCall(m));
+    const answered = inb.some((m) => /complete|answered/.test(String(m.meta?.call?.status || m.status).toLowerCase()));
+    const human = ms.some((m) => String(m.direction).toLowerCase() === 'outbound' && (isCall(m) || !autoRe.test(String(m.source || ''))));
+    let k;
+    if (cust && cust.created.some((d) => d >= ld)) k = OUT[0];
+    else if (hcpPh.has(phone10(c.phone)) || (email(c.email) && hcpEm.has(email(c.email)))) k = OUT[1];
+    else if (inb.length) k = answered ? OUT[2] : human ? OUT[3] : OUT[4];
+    else k = human ? OUT[5] : OUT[6];
+    (outcome[ch] ||= Object.fromEntries(OUT.map((o) => [o, 0])))[k]++;
+    outList.push({ n: ghlName(c), ch, d: ld, k, g: gLink(c.id), h: cust ? `${HCP}/customers/${cust.id}` : null });
+  }
+  const leadOutcomes = { cats: OUT, since, byCh: outcome };
+  { const tot = Object.fromEntries(OUT.map((o) => [o, 0])); for (const v of Object.values(outcome)) for (const o of OUT) tot[o] += v[o];
+    notes.push(`Paid leads in the last ${config.ghl.message_window_days} days: ${OUT.map((o) => `${o} ${tot[o]}`).join(', ')}.`); }
   const r = resp.length ? { median: med(resp), within5: resp.filter((x) => x <= 5).length / resp.length, over60: resp.filter((x) => x > 60).length, n: resp.length, noReply } : { median: null, n: 0, noReply };
 
   // waiting: last message came from the customer in the last 30 days and needs an answer.
@@ -452,11 +476,11 @@ export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
       pullThrough: { tuneups: tune, converted: tuneConv, revenue: Math.round(tuneConvRev) },
       response: r, heat, heatAll, beforeAfter: ba, existingInCrm, syncExcluded,
     },
-    techs, estStats, campaigns, sites, leadHeat, answering: config.answering_hours || [8, 20],
+    techs, estStats, campaigns, sites, leadOutcomes, leadHeat, answering: config.answering_hours || [8, 20],
     lists: {
       credited: credited.slice(0, 2500), leads: leadList.sort((a, b) => (a.d < b.d ? 1 : -1)).slice(0, 3000), waiting: waitList.slice(0, 300),
       estimates: estList.slice(0, 300), unscheduled: unsched.slice(0, 300), missed: missList.sort((a, b) => (a.t < b.t ? 1 : -1)).slice(0, 400),
-      winback: winList.sort((a, b) => b.ltv - a.ltv).slice(0, 300), tuneDue: tuneDue.slice(0, 600),
+      winback: winList.sort((a, b) => b.ltv - a.ltv).slice(0, 300), tuneDue: tuneDue.slice(0, 600), outcomes: outList.sort((a, b) => (a.d < b.d ? 1 : -1)).slice(0, 1500),
     },
   };
 }
