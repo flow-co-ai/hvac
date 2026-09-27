@@ -41,7 +41,8 @@
     "gbp_lag_days": 3,
     "exclude_campaigns": "croa|fcra|tcpa|dental|sleep apnea|full smile|opendental|digital ocean|hir(e|ing)|job post|career|recruit|now hiring",
     "brand_queries": "quality|fibid|hvac ?365|qualityhvac",
-    "exclude_google_lsa": "^ghs|local services|home services"
+    "exclude_google_lsa": "localservices|local ?services|^ghs|home ?services",
+    "rank_exclude": "minneapolis|minnesota|\\bmn\\b|golden valley|plymouth|robbinsdale|new hope|st\\.? louis park|crystal|edina|maple grove|minnetonka|wayzata|brooklyn (park|center)|hopkins|medicine lake|osseo|blaine|coon rapids|shoreview|arden hills|mounds view|vadnais|lake elmo|corcoran|long lake|deephaven|shorewood|columbia heights|medina|ramsey|lakeville|hastings|554\\d\\d|crestwood mo|jobs?\\b|hiring|for sale|supply|parts"
   },
   "channels": [
     {
