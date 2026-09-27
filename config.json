@@ -46,9 +46,14 @@
   },
   "channels": [
     {
+      "name": "Imported list",
+      "exclude": true,
+      "match": "csv_import|import"
+    },
+    {
       "name": "HCP sync",
       "exclude": true,
-      "match": "housecall|\\bhcp\\b|work order|lessen"
+      "match": "housecall|\\bhcp\\b|work order|lessen|zapier"
     },
     {
       "name": "LSA",
@@ -68,7 +73,7 @@
     },
     {
       "name": "Website",
-      "match": "website|organic|form|chat widget|seo"
+      "match": "website|contact form|hvac form|web-?lead|chat widget|\\bform\\b|organic|seo"
     },
     {
       "name": "Text campaign",
