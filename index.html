@@ -1,0 +1,530 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Quality HVAC by Fibid · Business report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#16202b; --ink2:#46546380; --muted:#5d6b7a; --paper:#eef1f4; --card:#fff; --line:#d5dbe2;
+  --cool:#1864ab; --cool2:#a5c8ea; --heat:#c2410c; --heat2:#f5c4a8;
+  --up:#2f7d32; --down:#b42318; --adj:#b36200; --steel:#607080;
+  --c1:#1864ab; --c2:#c2410c; --c3:#2f7d32; --c4:#7048a8; --c5:#0f8a8a; --c6:#9aa5b1; --c7:#b36200;
+  --disp:'Barlow Condensed','Arial Narrow',Arial,sans-serif; --body:'Barlow',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.5 var(--body);-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--cool);outline-offset:2px}
+.wrap{max-width:1240px;margin:0 auto;padding:0 20px}
+header.top{background:var(--ink);color:#fff;padding-top:env(safe-area-inset-top)}
+header.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-top:14px;padding-bottom:12px;flex-wrap:wrap}
+.brand{font-family:var(--disp);font-weight:700;font-size:22px;letter-spacing:.2px;line-height:1.1}
+.brand small{display:block;font-family:var(--body);font-weight:400;font-size:12.5px;color:#aeb9c5;letter-spacing:0}
+.duo{height:4px;background:linear-gradient(90deg,var(--cool) 0 50%,var(--heat) 50% 100%)}
+.ranges{display:flex;background:#243142;border-radius:8px;padding:3px}
+.ranges button{background:none;border:0;padding:6px 12px;border-radius:6px;font-size:13.5px;color:#cfd8e2;cursor:pointer;white-space:nowrap}
+.ranges button[aria-pressed=true]{background:#fff;color:var(--ink);font-weight:600}
+nav.tabs{background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+nav.tabs .wrap{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+nav.tabs button{background:none;border:0;border-bottom:3px solid transparent;padding:13px 12px 10px;font-weight:500;color:var(--muted);cursor:pointer;white-space:nowrap}
+nav.tabs button[aria-selected=true]{color:var(--ink);border-bottom-color:var(--ink)}
+main{padding:34px 0 60px}
+.view{display:none}.view.on{display:block}
+h2.head{font-family:var(--disp);font-weight:600;font-size:clamp(28px,4.2vw,44px);line-height:1.05;margin:0 0 10px;max-width:30ch;letter-spacing:-.2px}
+.brief{margin:0 0 22px;padding:0;list-style:none;max-width:78ch;color:#2d3a48}
+.brief li{padding-left:16px;position:relative;margin:3px 0}
+.brief li:before{content:"";position:absolute;left:0;top:.62em;width:7px;height:7px;border-radius:2px;background:var(--steel)}
+.brief li.good:before{background:var(--up)}.brief li.bad:before{background:var(--down)}.brief li.adj:before{background:var(--adj)}
+.stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:22px}
+.stat{background:var(--card);padding:14px 16px 12px;min-width:0}
+.stat .k{font-size:13px;color:var(--muted);line-height:1.25}
+.stat .v{font-family:var(--disp);font-weight:600;font-size:34px;line-height:1.05;margin:4px 0 2px;font-variant-numeric:tabular-nums}
+.stat .d{font-size:12.5px;color:var(--muted);min-height:18px}
+.d .up{color:var(--up);font-weight:600}.d .down{color:var(--down);font-weight:600}
+.stat svg{display:block;width:100%;height:26px;margin-top:4px}
+.grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:18px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 18px;min-width:0}
+.panel h3{font-family:var(--disp);font-weight:600;font-size:21px;margin:0 0 2px;line-height:1.15}
+.panel .sub{font-size:13px;color:var(--muted);margin:0 0 12px}
+.s12{grid-column:span 12}.s8{grid-column:span 8}.s7{grid-column:span 7}.s6{grid-column:span 6}.s5{grid-column:span 5}.s4{grid-column:span 4}
+svg.chart{display:block;width:100%;height:auto;overflow:visible}
+svg text{font-family:var(--body);font-size:11px;fill:var(--muted)}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.5px;color:var(--muted);margin-top:8px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px;font-variant-numeric:tabular-nums}
+th{font-weight:500;color:var(--muted);text-align:right;padding:6px 8px;border-bottom:1px solid var(--line);font-size:12.5px;white-space:nowrap}
+td{text-align:right;padding:8px;border-bottom:1px solid #eef1f4;white-space:nowrap}
+th:first-child,td:first-child{text-align:left;padding-left:0}
+tr.sep td{border-top:1px solid var(--line);color:var(--muted);font-size:12.5px;padding-top:12px}
+tr.tot td{font-weight:600;border-top:1px solid var(--ink2)}
+.pill{display:inline-block;padding:1px 8px;border-radius:99px;font-size:12px;font-weight:600}
+.pill.up{background:#e3f1e4;color:var(--up)}.pill.down{background:#fbe6e4;color:var(--down)}.pill.adj{background:#fbeedd;color:var(--adj)}.pill.n{background:#e8ecf0;color:var(--steel)}
+.todo{list-style:none;margin:0;padding:0}
+.todo li{display:grid;grid-template-columns:64px 1fr;gap:12px;align-items:baseline;padding:10px 0;border-bottom:1px solid #eef1f4}
+.todo li:last-child{border:0}
+.todo b{font-family:var(--disp);font-size:28px;font-weight:600;line-height:1;text-align:right;font-variant-numeric:tabular-nums}
+.todo b.hot{color:var(--heat)}
+.todo span{font-size:14px}.todo small{display:block;color:var(--muted);font-size:12.5px}
+.todo a{color:var(--cool);font-weight:500}
+.lst{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.lcard .row{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid #eef1f4;font-size:14px}
+.lcard .row:last-of-type{border:0}
+.lcard svg{display:block;width:100%;height:34px;margin-top:10px}
+.lcard .big{font-family:var(--disp);font-weight:600;font-size:30px;line-height:1}
+.rank{display:grid;grid-template-columns:34px minmax(0,1fr) 64px 90px;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid #eef1f4;font-size:14px}
+.rank .p{font-family:var(--disp);font-size:22px;font-weight:600;text-align:right}
+.rank .q{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rank .c{text-align:right;font-size:13px}
+.rank svg{width:90px;height:22px}
+.grp{font-size:12.5px;color:var(--muted);margin:14px 0 2px}
+.more{background:none;border:1px solid var(--line);border-radius:6px;padding:6px 12px;margin-top:10px;cursor:pointer;font-size:13.5px}
+.note{font-size:12.5px;color:var(--muted);margin-top:10px}
+.heat{display:grid;grid-template-columns:34px repeat(24,minmax(0,1fr));gap:2px;font-size:10.5px;color:var(--muted)}
+.heat div{aspect-ratio:1/1;border-radius:2px;min-width:0}
+.heat .lab{aspect-ratio:auto;display:flex;align-items:center}
+.heat .hr{aspect-ratio:auto;text-align:center}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.split .box{border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.split .box .v{font-family:var(--disp);font-size:30px;font-weight:600;line-height:1.1}
+footer{font-size:12.5px;color:var(--muted);padding:20px 0 40px;border-top:1px solid var(--line)}
+footer p{margin:4px 0;max-width:90ch}
+#gate{position:fixed;inset:0;background:var(--ink);display:flex;align-items:center;justify-content:center;z-index:20;padding:20px}
+#gate form{background:#fff;border-radius:12px;padding:26px;width:100%;max-width:360px}
+#gate h1{font-family:var(--disp);font-weight:700;font-size:26px;margin:0 0 4px}
+#gate p{margin:0 0 16px;color:var(--muted);font-size:14px}
+#gate input{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:8px;font:inherit;margin-bottom:10px}
+#gate button{width:100%;padding:11px;border:0;border-radius:8px;background:var(--ink);color:#fff;font-weight:600;cursor:pointer}
+#gate .err{color:var(--down);font-size:13.5px;min-height:20px;margin:6px 0 0}
+@media (max-width:980px){.stats{grid-template-columns:repeat(3,minmax(0,1fr))}.s8,.s7,.s6,.s5,.s4{grid-column:span 12}.lst{grid-template-columns:1fr}}
+@media (max-width:560px){.wrap{padding:0 14px}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.stat:last-child:nth-child(odd){grid-column:span 2}.stat .v{font-size:29px}.ranges{width:100%}.ranges button{flex:1;padding:6px 4px}.rank{grid-template-columns:30px minmax(0,1fr) 54px}.rank svg{display:none}.heat{font-size:9px}.split{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div id="gate"><form id="gateForm" autocomplete="off">
+  <h1>Quality HVAC by Fibid</h1>
+  <p>Enter the dashboard password.</p>
+  <input id="pw" type="password" aria-label="Password" autofocus>
+  <button type="submit">Open dashboard</button>
+  <div class="err" id="gateErr" role="alert"></div>
+</form></div>
+
+<header class="top"><div class="wrap">
+  <div class="brand">Quality HVAC by Fibid<small id="asof"></small></div>
+  <div class="ranges" role="group" aria-label="Date range">
+    <button data-r="month" aria-pressed="true">This month</button>
+    <button data-r="last" aria-pressed="false">Last month</button>
+    <button data-r="90" aria-pressed="false">90 days</button>
+    <button data-r="365" aria-pressed="false">12 months</button>
+  </div>
+</div><div class="duo"></div></header>
+<nav class="tabs"><div class="wrap" role="tablist">
+  <button role="tab" data-v="pulse" aria-selected="true">Pulse</button>
+  <button role="tab" data-v="leads" aria-selected="false">Leads &amp; response</button>
+  <button role="tab" data-v="jobs" aria-selected="false">Jobs &amp; revenue</button>
+  <button role="tab" data-v="mkt" aria-selected="false">Marketing</button>
+  <button role="tab" data-v="google" aria-selected="false">Google</button>
+  <button role="tab" data-v="cust" aria-selected="false">Customers</button>
+</div></nav>
+<main class="wrap">
+  <section class="view on" id="v-pulse"></section>
+  <section class="view" id="v-leads"></section>
+  <section class="view" id="v-jobs"></section>
+  <section class="view" id="v-mkt"></section>
+  <section class="view" id="v-google"></section>
+  <section class="view" id="v-cust"></section>
+</main>
+<footer class="wrap" id="foot"></footer>
+
+<script>
+(() => {
+'use strict';
+let D = null, R = 'month', V = 'pulse';
+const $ = (s, el = document) => el.querySelector(s);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmt$ = (v) => v == null || isNaN(v) ? '—' : (Math.abs(v) >= 100000 ? '$' + (v / 1000).toFixed(0) + 'K' : Math.abs(v) >= 10000 ? '$' + (v / 1000).toFixed(1) + 'K' : '$' + Math.round(v).toLocaleString());
+const fmtN = (v) => v == null || isNaN(v) ? '—' : Math.round(v).toLocaleString();
+const pct = (v) => v == null || !isFinite(v) ? '—' : Math.round(v * 100) + '%';
+const sum = (a, i0, i1) => { let s = 0; for (let i = Math.max(0, i0); i <= i1 && i < a.length; i++) s += a[i] || 0; return s; };
+const MN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const mLabel = (m) => MN[+m.slice(5, 7) - 1];
+const mLong = (m) => ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][+m.slice(5, 7) - 1];
+const COLORS = ['var(--c1)', 'var(--c2)', 'var(--c3)', 'var(--c4)', 'var(--c5)', 'var(--c7)', 'var(--c6)'];
+
+// ---------- decrypt ----------
+const b64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+async function decrypt(pass) {
+  const r = await fetch('data.enc.json', { cache: 'no-store' });
+  if (!r.ok) throw new Error('Data file not found. The latest build may still be running.');
+  const e = await r.json();
+  const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pass), 'PBKDF2', false, ['deriveKey']);
+  const key = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: b64(e.salt), iterations: 200000, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+  let plain;
+  try { plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64(e.iv) }, key, b64(e.ct)); } catch { throw new Error('That password didn’t work.'); }
+  const txt = await new Response(new Blob([plain]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+  return JSON.parse(txt);
+}
+async function load(pass) {
+  if (pass == null) { // unencrypted preview
+    const r = await fetch('data.json', { cache: 'no-store' }); if (r.ok) return r.json(); return null;
+  }
+  return decrypt(pass);
+}
+$('#gateForm').addEventListener('submit', async (ev) => {
+  ev.preventDefault(); $('#gateErr').textContent = 'Opening…';
+  try { D = await load($('#pw').value); sessionStorage.setItem('hvac_pw', $('#pw').value); start(); }
+  catch (e) { $('#gateErr').textContent = e.message; }
+});
+(async () => {
+  try { const pre = await load(null); if (pre) { D = pre; return start(); } } catch {}
+  const s = sessionStorage.getItem('hvac_pw');
+  if (s) { try { D = await load(s); start(); } catch { sessionStorage.removeItem('hvac_pw'); } }
+})();
+
+// ---------- ranges ----------
+function range() {
+  const days = D.days, n = days.length, t = n - 1, today = D.meta.today;
+  const idxOf = (d) => { let lo = 0; for (let i = 0; i < n; i++) if (days[i] >= d) return i; return lo; };
+  const mStart = today.slice(0, 8) + '01';
+  if (R === 'month') {
+    const i0 = idxOf(mStart), len = t - i0 + 1;
+    const pm = prevMonth(today.slice(0, 7)); const p0 = idxOf(pm + '-01'); const p1 = i0 - 1;
+    return { i0, i1: t, p0, p1: Math.min(p1, p0 + len - 1), label: mLong(today) + ' to date', short: 'month to date', vs: `vs same days of ${mLong(pm)}`, partial: true, months: [today.slice(0, 7)], fullPrev: [p0, p1] };
+  }
+  if (R === 'last') {
+    const pm = prevMonth(today.slice(0, 7)); const i0 = idxOf(pm + '-01'), i1 = idxOf(mStart) - 1;
+    const ppm = prevMonth(pm); const p0 = idxOf(ppm + '-01');
+    return { i0, i1, p0, p1: i0 - 1, label: mLong(pm), short: mLong(pm), vs: 'vs ' + mLong(ppm), months: [pm] };
+  }
+  const L = +R; const i0 = Math.max(0, n - L), p1 = i0 - 1, p0 = Math.max(0, p1 - L + 1);
+  return { i0, i1: t, p0, p1, label: L === 90 ? 'Last 90 days' : 'Last 12 months', short: L === 90 ? 'last 90 days' : 'last 12 months', vs: p1 - p0 + 1 >= L ? 'vs the ' + L + ' days before' : null, months: monthsIn(days[i0], today) };
+}
+function prevMonth(m) { let [y, mo] = m.split('-').map(Number); mo--; if (!mo) { mo = 12; y--; } return `${y}-${String(mo).padStart(2, '0')}`; }
+function monthsIn(a, b) { const out = []; let m = a.slice(0, 7); while (m <= b.slice(0, 7)) { out.push(m); let [y, mo] = m.split('-').map(Number); mo++; if (mo > 12) { mo = 1; y++; } m = `${y}-${String(mo).padStart(2, '0')}`; } return out; }
+const S = (arr, rg, prev) => prev ? (rg.p1 >= rg.p0 && rg.vs ? sum(arr, rg.p0, rg.p1) : null) : sum(arr, rg.i0, rg.i1);
+function delta(cur, prev, rg, inverse) {
+  if (prev == null || !rg.vs) return '';
+  if (!prev) return cur ? `<span>${rg.vs}: new</span>` : '';
+  const ch = (cur - prev) / prev; const good = inverse ? ch < 0 : ch > 0;
+  if (Math.abs(ch) < 0.02) return `<span>flat ${rg.vs}</span>`;
+  return `<span class="${good ? 'up' : 'down'}">${ch > 0 ? '▲' : '▼'} ${Math.abs(Math.round(ch * 100))}%</span> <span>${rg.vs}</span>`;
+}
+// last-12-months monthly totals for a daily array
+function monthly(arr) {
+  const out = {}; D.days.forEach((d, i) => { const m = d.slice(0, 7); out[m] = (out[m] || 0) + (arr[i] || 0); });
+  return monthsIn(D.days[Math.max(0, D.days.length - 365)], D.meta.today).map((m) => ({ m, v: out[m] || 0 }));
+}
+function weekly(arr, weeks = 13) {
+  const n = D.days.length, out = [];
+  for (let w = weeks - 1; w >= 0; w--) { const i1 = n - 1 - w * 7, i0 = i1 - 6; out.push({ d: D.days[Math.max(0, i0)], v: sum(arr, i0, i1) }); }
+  return out;
+}
+
+// ---------- svg helpers ----------
+function spark(arr, color = 'var(--steel)', invert) {
+  const v = arr.filter((x) => x != null); if (v.length < 2) return '<svg></svg>';
+  const mx = Math.max(...v), mn = Math.min(...v), W = 100, H = 24;
+  const pts = arr.map((x, i) => x == null ? null : [i / (arr.length - 1) * W, invert ? 2 + (x - mn) / ((mx - mn) || 1) * (H - 4) : H - 2 - (x - mn) / ((mx - mn) || 1) * (H - 4)]).filter(Boolean);
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><polyline fill="none" stroke="${color}" stroke-width="1.6" vector-effect="non-scaling-stroke" points="${pts.map((p) => p.map((x) => x.toFixed(1)).join(',')).join(' ')}"/></svg>`;
+}
+function bars(series, opt = {}) {
+  // series: [{label, parts:[{v,c}], faded}]
+  const narrow = window.innerWidth < 560, W = narrow ? 380 : (opt.w || 640), H = narrow ? Math.round((opt.h || 220) * 0.95) : (opt.h || 220), pl = 46, pb = 26, pt = 14, n = series.length;
+  const tot = series.map((s) => s.parts.reduce((a, p) => a + p.v, 0));
+  const raw = Math.max(1, ...tot), mag = Math.pow(10, Math.floor(Math.log10(raw / 3))), step = [1, 2, 2.5, 5, 10].map((k) => k * mag).find((st) => st * 3 >= raw) || mag * 10;
+  const mx = step * 3, bw = (W - pl) / n;
+  const y = (v) => pt + (H - pt - pb) * (1 - v / mx);
+  let g = '';
+  for (let k = 0; k <= 3; k++) { const v = step * k, yy = y(v); g += `<line x1="${pl}" x2="${W}" y1="${yy}" y2="${yy}" stroke="#e3e8ed"/><text x="${pl - 6}" y="${yy + 4}" text-anchor="end">${opt.money ? fmt$(v) : fmtN(v)}</text>`; }
+  series.forEach((s, i) => {
+    let acc = 0; const x = pl + i * bw + bw * 0.16, w = bw * 0.68;
+    s.parts.forEach((p) => { if (!p.v) return; const y0 = y(acc), y1 = y(acc + p.v); acc += p.v; g += `<rect x="${x.toFixed(1)}" y="${y1.toFixed(1)}" width="${w.toFixed(1)}" height="${Math.max(0, y0 - y1).toFixed(1)}" fill="${p.c}" opacity="${s.faded ? 0.45 : 1}"><title>${esc(s.label)}: ${opt.money ? fmt$(p.v) : fmtN(p.v)}</title></rect>`; });
+    const every = Math.max(opt.every || 1, Math.ceil(n / ((W - pl) / 34)));
+    if (s.label && (i % every === 0 || i === n - 1)) g += `<text x="${(x + w / 2).toFixed(1)}" y="${H - 8}" text-anchor="middle">${esc(s.label)}</text>`;
+  });
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opt.aria || 'chart')}">${g}</svg>`;
+}
+const legend = (items) => `<div class="legend">${items.map(([l, c]) => `<span><i style="background:${c}"></i>${esc(l)}</span>`).join('')}</div>`;
+const stat = (k, v, d, sp, c) => `<div class="stat"><div class="k">${k}</div><div class="v">${v}</div><div class="d">${d || ''}</div>${sp ? spark(sp, c) : ''}</div>`;
+const last8w = (arr) => weekly(arr, 8).map((x) => x.v);
+
+// ---------- computations ----------
+function paidSpend(rg, prev) {
+  const g = S(D.daily.spend['Google Ads'], rg, prev) ?? 0, m = S(D.daily.spend.Meta, rg, prev) ?? 0;
+  const l = lsaFor(rg, prev);
+  return { 'Google Ads': g, Meta: m, LSA: l.v, lsaMissing: l.missing, total: g + m + (l.v || 0) };
+}
+function lsaFor(rg, prev) {
+  // monthly LSA spend from billing, prorated by the days of each month in range; null when not entered
+  const [i0, i1] = prev ? [rg.p0, rg.p1] : [rg.i0, rg.i1]; if (i1 < i0) return { v: 0, missing: [] };
+  const byM = {}; for (let i = i0; i <= i1; i++) { const m = D.days[i].slice(0, 7); byM[m] = (byM[m] || 0) + 1; }
+  let s = 0, known = 0; const missing = [];
+  for (const [m, dn] of Object.entries(byM)) { const v = D.lsa[m]; if (v == null) { if (m >= '2026-04') missing.push(m); continue; } known++; const dim = new Date(+m.slice(0, 4), +m.slice(5, 7), 0).getDate(); s += v * Math.min(1, dn / dim); }
+  return { v: known ? s : (missing.length ? null : 0), missing };
+}
+function cohortsIn(rg) {
+  const out = {}; const ms = rg.months || monthsIn(D.days[rg.i0], D.days[rg.i1]);
+  for (const m of ms) for (const [ch, c] of Object.entries(D.cohorts[m] || {})) { const o = out[ch] ||= { leads: 0, booked: 0, customers: 0, revenue: 0 }; for (const k in o) o[k] += c[k]; }
+  return out;
+}
+function leadsTotal(rg, prev) { let s = 0; for (const ch of D.channels) s += S(D.daily.leads[ch], rg, prev) ?? 0; return s; }
+
+// ---------- views ----------
+function pulse(rg) {
+  const r = D.daily.rev.total, rev = S(r, rg), prev = S(r, rg, true);
+  const jobs = S(D.daily.cnt.total, rg), jobsP = S(D.daily.cnt.total, rg, true);
+  const nc = S(D.daily.newCustomers, rg), ncP = S(D.daily.newCustomers, rg, true);
+  const ld = leadsTotal(rg), ldP = leadsTotal(rg, true);
+  const w = D.snapshot.waiting;
+  let head;
+  if (R === 'month') {
+    const dayOfMonth = rg.i1 - rg.i0 + 1, dim = new Date(+D.meta.today.slice(0, 4), +D.meta.today.slice(5, 7), 0).getDate();
+    const pace = rev / dayOfMonth * dim, lastFull = sum(r, rg.fullPrev[0], rg.fullPrev[1]);
+    head = `On pace for ${fmt$(pace)} in ${mLong(D.meta.today)}. ${mLong(prevMonth(D.meta.today.slice(0, 7)))} was ${fmt$(lastFull)}.`;
+  } else head = `${fmt$(rev)} in revenue, ${rg.short}.`;
+  const cs = cohortsIn(rg); const best = D.paid.map((ch) => [ch, cs[ch]?.revenue || 0]).sort((a, b) => b[1] - a[1])[0];
+  const ba = D.snapshot.beforeAfter, rate = (o) => { const t = o.answered + o.missed + o.voicemail; return t ? (o.missed + o.voicemail) / t : null; };
+  const brief = [];
+  if (prev != null && rg.vs) brief.push([rev >= prev ? 'good' : 'bad', `Revenue is ${rev >= prev ? 'up' : 'down'} ${pct(Math.abs(rev - prev) / (prev || 1))} ${rg.vs}, on ${fmtN(jobs)} completed jobs.`]);
+  if (best && best[1] > 0) brief.push(['good', `Leads from ${best[0]} in this period have already turned into ${fmt$(best[1])} in completed jobs.`]);
+  const rb = rate(ba.before), ra = rate(ba.after);
+  if (rb != null && ra != null && ba.after.answered + ba.after.missed + ba.after.voicemail >= 5) brief.push([ra < rb ? 'good' : 'adj', `Tracked calls missed or sent to voicemail: ${pct(ra)} since call routing changed on ${fmtDate(D.meta.routingFix)}, from ${pct(rb)} before.`]);
+  if (w.total) brief.push(['adj', `${w.total} customer conversations are waiting on a reply, ${w.d3p} of them for more than 3 days.`]);
+  const mo = monthly(r);
+  return `<h2 class="head">${esc(head)}</h2>
+  <ul class="brief">${brief.slice(0, 3).map(([c, t]) => `<li class="${c}">${esc(t)}</li>`).join('')}</ul>
+  <div class="stats">
+    ${stat('Revenue', fmt$(rev), delta(rev, prev, rg), last8w(r), 'var(--cool)')}
+    ${stat('Jobs completed', fmtN(jobs), delta(jobs, jobsP, rg), last8w(D.daily.cnt.total))}
+    ${stat('New customers', fmtN(nc), delta(nc, ncP, rg), last8w(D.daily.newCustomers))}
+    ${stat('New leads', fmtN(ld), delta(ld, ldP, rg), last8w(D.channels.reduce((a, ch) => a.map((v, i) => v + D.daily.leads[ch][i]), new Array(D.days.length).fill(0))))}
+    ${stat('Waiting on a reply', fmtN(w.total), 'right now', null)}
+  </div>
+  <div class="grid">
+    <div class="panel s8"><h3>Revenue by month</h3><p class="sub">Completed jobs in Housecall Pro. The current month is to date.</p>
+      ${bars(mo.map((x, i) => ({ label: mLabel(x.m), parts: [{ v: x.v, c: 'var(--cool)' }], faded: i === mo.length - 1 })), { money: true, aria: 'Revenue by month' })}</div>
+    <div class="panel s4"><h3>Waiting on the team</h3><p class="sub">Open right now</p>
+      <ul class="todo">
+        <li><b class="${w.total ? 'hot' : ''}">${w.total}</b><span>Conversations waiting on a reply<small>${w.lt1} today · ${w.d1_3} for 1–3 days · ${w.d3p} older${D.snapshot.link ? ` · <a href="${D.snapshot.link}" target="_blank" rel="noopener">Open in GoHighLevel</a>` : ''}</small></span></li>
+        <li><b>${D.snapshot.estimates.open}</b><span>Estimates not yet approved<small>${fmt$(D.snapshot.estimates.value)} in value, ${D.snapshot.estimates.aged} older than 30 days · Housecall Pro › Estimates</small></span></li>
+        <li><b>${D.snapshot.needsScheduling}</b><span>Jobs that still need scheduling<small>Housecall Pro › Jobs, filtered to Unscheduled</small></span></li>
+        <li><b class="${sum(D.daily.calls.missed, D.days.length - 7, D.days.length - 1) ? 'hot' : ''}">${fmtN(sum(D.daily.calls.missed, D.days.length - 7, D.days.length - 1) + sum(D.daily.calls.voicemail, D.days.length - 7, D.days.length - 1))}</b><span>Tracked calls missed or to voicemail, last 7 days<small>Worth a callback check in GoHighLevel</small></span></li>
+      </ul></div>
+  </div>`;
+}
+const fmtDate = (d) => { const [y, m, dd] = d.split('-'); return `${MN[+m - 1]} ${+dd}`; };
+
+function leads(rg) {
+  const c = D.daily.calls, msgFrom = D.days.length - D.meta.messageWindow;
+  const crg = { ...rg, i0: Math.max(rg.i0, msgFrom) };
+  const ans = S(c.answered, crg), mis = S(c.missed, crg), vm = S(c.voicemail, crg), tot = ans + mis + vm;
+  const ld = leadsTotal(rg), ldP = leadsTotal(rg, true);
+  const resp = D.snapshot.response, ba = D.snapshot.beforeAfter;
+  const wk = D.channels.map((ch, k) => ({ ch, c: COLORS[k % COLORS.length], w: weekly(D.daily.leads[ch]) }));
+  const series = wk[0].w.map((x, i) => ({ label: fmtDate(x.d), parts: wk.map((s) => ({ v: s.w[i].v, c: s.c })), faded: i === wk[0].w.length - 1 }));
+  const heat = D.snapshot.heat, all = D.snapshot.heatAll, mx = Math.max(1, ...heat.flat());
+  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  let hm = '<div></div>' + Array.from({ length: 24 }, (_, h) => `<div class="hr">${h % 3 === 0 ? (h === 0 ? '12a' : h < 12 ? h + 'a' : h === 12 ? '12p' : (h - 12) + 'p') : ''}</div>`).join('');
+  heat.forEach((row, d) => { hm += `<div class="lab">${days[d]}</div>` + row.map((v, h) => `<div title="${days[d]} ${h}:00 · ${v} missed of ${all[d][h]} calls" style="background:${v ? `rgba(194,65,12,${0.18 + 0.82 * v / mx})` : all[d][h] ? '#e3edf7' : '#f3f5f7'}"></div>`).join(''); });
+  const rate = (o) => { const t = o.answered + o.missed + o.voicemail; return t ? (o.missed + o.voicemail) / t : null; };
+  const head = tot ? `${pct((mis + vm) / tot)} of tracked calls were missed or went to voicemail.` : `${fmtN(ld)} new leads, ${rg.short}.`;
+  const bySource = D.channels.map((ch, k) => [ch, S(D.daily.leads[ch], rg), COLORS[k % COLORS.length]]).filter((x) => x[1]).sort((a, b) => b[1] - a[1]);
+  return `<h2 class="head">${esc(head)}</h2>
+  <ul class="brief">
+    <li class="${resp.within5 >= 0.8 ? 'good' : 'adj'}">${resp.n ? `${pct(resp.within5)} of new leads got a first human reply within 5 minutes; ${resp.over60} waited more than an hour.` : 'First-reply time appears once new leads have message history.'}</li>
+    <li>Live answering covers 8am to 8pm. Calls before 8am and after 8pm show as the left and right edges of the grid below.</li>
+    <li>Answered includes any connected call. A connected call is not always a conversation, so the missed share is the floor.</li>
+  </ul>
+  <div class="stats">
+    ${stat('New leads', fmtN(ld), delta(ld, ldP, rg), last8w(D.channels.reduce((a, ch) => a.map((v, i) => v + D.daily.leads[ch][i]), new Array(D.days.length).fill(0))))}
+    ${stat('Tracked calls', fmtN(tot), crg.i0 > rg.i0 ? `last ${D.meta.messageWindow} days` : '', last8w(c.answered.map((v, i) => v + c.missed[i] + c.voicemail[i])))}
+    ${stat('Missed', fmtN(mis), tot ? pct(mis / tot) + ' of calls' : '', last8w(c.missed), 'var(--heat)')}
+    ${stat('Voicemail', fmtN(vm), tot ? pct(vm / tot) + ' of calls' : '', last8w(c.voicemail))}
+    ${stat('Median first reply', resp.median == null ? '—' : resp.median < 1 ? '<1 min' : resp.median < 60 ? Math.round(resp.median) + ' min' : (resp.median / 60).toFixed(1) + ' hr', `new leads, last ${D.meta.messageWindow} days`, null)}
+  </div>
+  <div class="grid">
+    <div class="panel s8"><h3>New leads by week</h3><p class="sub">Last 13 weeks, by where the lead came from. This week is in progress.</p>
+      ${bars(series, { aria: 'Leads by week', every: 2 })}${legend(wk.map((s) => [s.ch, s.c]))}</div>
+    <div class="panel s4"><h3>Where leads came from</h3><p class="sub">${esc(rg.label)}</p>
+      <div class="tbl"><table><thead><tr><th>Source</th><th>Leads</th><th>Share</th></tr></thead><tbody>
+      ${bySource.map(([ch, v, col]) => `<tr><td><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${col};margin-right:7px"></i>${esc(ch)}</td><td>${fmtN(v)}</td><td>${pct(v / (ld || 1))}</td></tr>`).join('') || '<tr><td colspan="3">No new leads in this range.</td></tr>'}
+      </tbody></table></div>
+      <p class="note">Calls to the main phone line aren’t tracked here, so callers from the Google listings who dial it directly don’t appear as leads.</p></div>
+    <div class="panel s8"><h3>When calls are missed</h3><p class="sub">Missed and voicemail calls by hour, last ${D.meta.messageWindow} days. Darker means more missed. Blue squares had calls, all answered.</p>
+      <div class="heat">${hm}</div></div>
+    <div class="panel s4"><h3>Before and after the routing change</h3><p class="sub">Share of tracked calls missed or to voicemail. Routing changed ${fmtDate(D.meta.routingFix)}.</p>
+      <div class="split"><div class="box"><div class="k">Before</div><div class="v">${pct(rate(ba.before))}</div><small>${fmtN(ba.before.answered + ba.before.missed + ba.before.voicemail)} calls</small></div>
+      <div class="box"><div class="k">Since</div><div class="v">${pct(rate(ba.after))}</div><small>${fmtN(ba.after.answered + ba.after.missed + ba.after.voicemail)} calls</small></div></div>
+      ${ba.after.answered + ba.after.missed + ba.after.voicemail < 20 ? '<p class="note">Fewer than 20 calls since the change, so treat this as early.</p>' : ''}</div>
+  </div>`;
+}
+
+function jobsView(rg) {
+  const T = D.types, col = { Repair: 'var(--heat)', Replacement: 'var(--cool)', 'Tune-up': 'var(--c3)', Other: 'var(--c6)' };
+  const rows = T.map((t) => ({ t, n: S(D.daily.cnt[t], rg), v: S(D.daily.rev[t], rg), nP: S(D.daily.cnt[t], rg, true), vP: S(D.daily.rev[t], rg, true) }));
+  const rev = S(D.daily.rev.total, rg), revP = S(D.daily.rev.total, rg, true), n = S(D.daily.cnt.total, rg), nP = S(D.daily.cnt.total, rg, true);
+  const tk = n ? rev / n : null, tkP = nP ? revP / nP : null;
+  const repl = rows.find((r) => r.t === 'Replacement') || { v: 0, n: 0, vP: 0 };
+  const mos = monthsIn(D.days[Math.max(0, D.days.length - 365)], D.meta.today);
+  const byM = (t) => { const o = {}; D.days.forEach((d, i) => { const m = d.slice(0, 7); o[m] = (o[m] || 0) + D.daily.rev[t][i]; }); return o; };
+  const mm = Object.fromEntries(T.map((t) => [t, byM(t)]));
+  const series = mos.map((m, i) => ({ label: mLabel(m), parts: T.map((t) => ({ v: mm[t][m] || 0, c: col[t] })), faded: i === mos.length - 1 }));
+  const sch = D.snapshot.schedule, e = D.snapshot.estimates;
+  const head = repl.v && rev ? `Replacements were ${pct(repl.v / rev)} of revenue on ${fmtN(repl.n)} jobs.` : `${fmtN(n)} jobs completed, averaging ${fmt$(tk)}.`;
+  return `<h2 class="head">${esc(head)}</h2>
+  <ul class="brief">
+    <li>${fmtN(n)} completed jobs averaged ${fmt$(tk)} each${tkP && rg.vs ? `, against ${fmt$(tkP)} ${rg.vs.replace('vs ', 'in ')}` : ''}.</li>
+    <li class="${e.aged ? 'adj' : ''}">${e.open} estimates worth ${fmt$(e.value)} are not approved yet${e.aged ? `; ${e.aged} are older than 30 days` : ''}.</li>
+    <li>${fmtN(sch.reduce((s, x) => s + x.n, 0))} jobs are on the schedule for the next 14 days.</li>
+  </ul>
+  <div class="stats">
+    ${stat('Revenue', fmt$(rev), delta(rev, revP, rg), last8w(D.daily.rev.total), 'var(--cool)')}
+    ${stat('Jobs completed', fmtN(n), delta(n, nP, rg), last8w(D.daily.cnt.total))}
+    ${stat('Average job', fmt$(tk), delta(tk, tkP, rg), null)}
+    ${stat('Replacement revenue', fmt$(repl.v), delta(repl.v, repl.vP, rg), last8w(D.daily.rev.Replacement || []))}
+    ${stat('Open estimates', fmt$(e.value), `${e.open} estimates`, null)}
+  </div>
+  <div class="grid">
+    <div class="panel s8"><h3>Revenue by month and type</h3><p class="sub">The current month is to date.</p>
+      ${bars(series, { money: true, aria: 'Revenue by month and job type' })}${legend(T.map((t) => [t, col[t]]))}</div>
+    <div class="panel s4"><h3>By type of work</h3><p class="sub">${esc(rg.label)}</p>
+      <div class="tbl"><table><thead><tr><th>Type</th><th>Jobs</th><th>Revenue</th><th>Avg</th></tr></thead><tbody>
+      ${rows.map((r) => `<tr><td>${esc(r.t)}</td><td>${fmtN(r.n)}</td><td>${fmt$(r.v)}</td><td>${r.n ? fmt$(r.v / r.n) : '—'}</td></tr>`).join('')}
+      <tr class="tot"><td>All</td><td>${fmtN(n)}</td><td>${fmt$(rev)}</td><td>${fmt$(tk)}</td></tr></tbody></table></div>
+      <p class="note">Type is read from the job type and description in Housecall Pro.</p></div>
+    <div class="panel s12"><h3>On the schedule, next 14 days</h3><p class="sub">Jobs booked in Housecall Pro, by day</p>
+      ${bars(sch.map((x) => ({ label: new Date(x.d + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' }), parts: [{ v: x.n, c: 'var(--steel)' }] })), { h: 200, w: 900, aria: 'Jobs scheduled next 14 days' })}</div>
+  </div>`;
+}
+
+function mkt(rg) {
+  const cs = cohortsIn(rg), sp = paidSpend(rg), spP = paidSpend(rg, true);
+  const paid = D.paid.map((ch) => ({ ch, s: sp[ch], ...(cs[ch] || { leads: 0, booked: 0, customers: 0, revenue: 0 }) }));
+  const lsaRow = paid.find((r) => r.ch === 'LSA');
+  const other = D.channels.filter((c) => !D.paid.includes(c)).map((ch) => ({ ch, ...(cs[ch] || { leads: 0, booked: 0, customers: 0, revenue: 0 }) })).filter((r) => r.leads);
+  const T = paid.reduce((a, r) => ({ s: a.s + (r.s || 0), leads: a.leads + r.leads, booked: a.booked + r.booked, customers: a.customers + r.customers, revenue: a.revenue + r.revenue }), { s: 0, leads: 0, booked: 0, customers: 0, revenue: 0 });
+  const priced = paid.filter((r) => r.s != null), roiRev = priced.reduce((x, r) => x + r.revenue, 0);
+  const roi = T.s ? roiRev / T.s : null;
+  const row = (r, spend = true) => r.s == null && spend ? `<tr><td>${esc(r.ch)}</td><td>Not entered</td><td>${fmtN(r.leads)}</td><td>—</td><td>${fmtN(r.booked)}</td><td>${fmtN(r.customers)}</td><td>${fmt$(r.revenue)}</td><td>—</td></tr>` : `<tr><td>${esc(r.ch)}</td><td>${spend ? fmt$(r.s) : '—'}</td><td>${fmtN(r.leads)}</td><td>${spend && r.leads ? fmt$(r.s / r.leads) : '—'}</td><td>${fmtN(r.booked)}</td><td>${fmtN(r.customers)}</td><td>${fmt$(r.revenue)}</td><td>${spend && r.s ? `<span class="pill ${r.revenue >= r.s ? 'up' : r.revenue ? 'adj' : 'n'}">${(r.revenue / r.s).toFixed(1)}×</span>` : '—'}</td></tr>`;
+  const mos = monthsIn(D.days[Math.max(0, D.days.length - 365)], D.meta.today).filter((m) => m >= '2026-04');
+  const spM = (m) => { let s = 0; D.days.forEach((d, i) => { if (d.startsWith(m)) s += D.daily.spend['Google Ads'][i] + D.daily.spend.Meta[i]; }); return s + (D.lsa[m] || 0); };
+  const rvM = (m) => D.paid.reduce((s, ch) => s + (D.cohorts[m]?.[ch]?.revenue || 0), 0);
+  const series = [];
+  mos.forEach((m, i) => { series.push({ label: mLabel(m), parts: [{ v: spM(m), c: 'var(--steel)' }], faded: i === mos.length - 1 }); series.push({ label: '', parts: [{ v: rvM(m), c: 'var(--up)' }], faded: i === mos.length - 1 }); });
+  const miss = sp.lsaMissing.filter((m) => m < D.meta.today.slice(0, 7));
+  const curMiss = sp.lsaMissing.includes(D.meta.today.slice(0, 7));
+  const stale = Object.entries(D.meta.lastSpend || {}).filter(([, d]) => D.meta.adsActive && (new Date(D.meta.today) - new Date(d)) / 864e5 > 5);
+  const head = roi != null && T.revenue ? `Every $1 in ads has returned $${roi.toFixed(2)} in completed jobs so far.` : `${fmt$(T.s)} in ad spend, ${fmtN(T.leads)} paid leads.`;
+  return `<h2 class="head">${esc(head)}</h2>
+  <ul class="brief">
+    <li>Leads are followed from the ${R === 'month' || R === 'last' ? 'month' : 'months'} they arrived. A channel gets credit only when its lead existed before the customer’s first job.</li>
+    <li>Booked and completed come from Housecall Pro. Revenue keeps growing as these leads finish more work.</li>
+    ${miss.length ? `<li class="adj">LSA spend for ${miss.map(mLong).join(', ')} hasn’t been entered yet, so LSA return is incomplete for those months.</li>` : ''}
+    ${curMiss ? `<li>LSA spend for ${mLong(D.meta.today)} is entered from billing after the month closes, so paid totals leave it out until then.</li>` : ''}
+    ${stale.map(([ch, d]) => `<li class="adj">${esc(ch)} data runs through ${fmtDate(d)}.</li>`).join('')}
+  </ul>
+  <div class="stats">
+    ${stat('Ad spend', fmt$(T.s), priced.length < paid.length ? 'Google Ads and Meta' : 'Google Ads, Meta and LSA', null)}
+    ${stat('Paid leads', fmtN(T.leads), '', null)}
+    ${stat('Cost per lead', T.leads ? fmt$(T.s / T.leads) : '—', '', null)}
+    ${stat('Became customers', fmtN(T.customers), T.leads ? pct(T.customers / T.leads) + ' of paid leads' : '', null)}
+    ${stat('Return on spend', roi == null ? '—' : roi.toFixed(1) + '×', fmt$(roiRev) + ' so far' + (priced.length < paid.length ? ', excluding LSA' : ''), null)}
+  </div>
+  <div class="grid">
+    <div class="panel s12"><h3>Results by channel</h3><p class="sub">Leads that arrived in this period (${esc(rg.label)}), and what they have turned into since</p>
+      <div class="tbl"><table><thead><tr><th>Channel</th><th>Spent</th><th>Leads</th><th>Per lead</th><th>Booked</th><th>Became customers</th><th>Paid so far</th><th>Return</th></tr></thead><tbody>
+      ${paid.map((r) => row(r)).join('')}
+      <tr class="tot"><td>Paid total</td><td>${fmt$(T.s)}</td><td>${fmtN(T.leads)}</td><td>${T.leads ? fmt$(T.s / T.leads) : '—'}</td><td>${fmtN(T.booked)}</td><td>${fmtN(T.customers)}</td><td>${fmt$(T.revenue)}</td><td>${roi == null ? '—' : roi.toFixed(1) + '×'}</td></tr>
+      ${other.length ? `<tr class="sep"><td colspan="8">Unpaid sources</td></tr>` + other.map((r) => row(r, false)).join('') : ''}
+      </tbody></table></div>
+      <p class="note">Cost per lead benchmarks for HVAC: LSA about $51, Meta tune-up $35–65, Google non-brand search about $149. Leads with no source captured are credited to no channel.</p></div>
+    <div class="panel s12"><h3>Spend and what it brought in, by month</h3><p class="sub">Grey is ad spend. Green is completed-job revenue from that month’s paid leads so far.</p>
+      ${bars(series, { money: true, aria: 'Spend vs revenue by month', h: 240, w: 900 })}${legend([['Ad spend', 'var(--steel)'], ['Revenue from paid leads', 'var(--up)']])}</div>
+  </div>`;
+}
+
+let showAll = false;
+function google(rg) {
+  const L = D.listings, lagFrom = D.days.length - D.meta.gbpLag;
+  const tot = L.reduce((s, l) => s + S(l.calls, rg), 0);
+  const head = `${fmtN(tot)} calls from the three Google listings, ${rg.short}.`;
+  const cards = L.map((l) => {
+    const c = S(l.calls, rg), cP = S(l.calls, rg, true), w = S(l.web, rg), im = S(l.impr, rg), rv = S(l.reviews, rg);
+    return `<div class="panel lcard"><h3>${esc(l.name)}</h3><p class="sub">${esc(l.area || 'Service-area listing')}${l.moved ? ` · moved ${fmtDate(l.moved)}` : ''}</p>
+      <div class="row"><span>Calls</span><span><span class="big">${fmtN(c)}</span></span></div>
+      <div class="row"><span></span><span class="d" style="font-size:12.5px">${delta(c, cP, rg)}</span></div>
+      <div class="row"><span>Website visits</span><b>${fmtN(w)}</b></div>
+      <div class="row"><span>Times shown</span><b>${fmtN(im)}</b></div>
+      <div class="row"><span>New reviews</span><b>${fmtN(rv)}</b></div>
+      <div class="row"><span>All reviews</span><b>${fmtN(l.total)}${l.rating ? ` · ${l.rating.toFixed(1)}★` : ''}</b></div>
+      ${spark(weekly(l.calls, 13).map((x) => x.v), 'var(--cool)')}
+      ${l.moved && l.moved >= D.days[rg.i0] ? '<p class="note">Address changed this period. Google re-checks moved listings, so a short dip is expected.</p>' : ''}</div>`;
+  }).join('');
+  const rk = D.rankings; const shown = showAll ? rk : rk.slice(0, 6);
+  const grp = [['Page one', (p) => p <= 10], ['Page two', (p) => p > 10 && p <= 20], ['Further back', (p) => p > 20]];
+  const rl = grp.map(([g, f]) => { const xs = shown.filter((x) => f(x.pos)).sort((a, b) => a.pos - b.pos); return xs.length ? `<div class="grp">${g}</div>` + xs.map((x) => `<div class="rank"><span class="p">${Math.round(x.pos)}</span><span class="q" title="${esc(x.query)}">${esc(x.query)}</span><span class="c">${x.change == null ? '' : x.change >= 1 ? `<span class="pill up">▲ ${Math.round(x.change)}</span>` : x.change <= -1 ? `<span class="pill down">▼ ${Math.round(-x.change)}</span>` : '<span class="pill n">steady</span>'}</span>${spark(x.series, 'var(--steel)', true)}</div>`).join('') : ''; }).join('');
+  return `<h2 class="head">${esc(head)}</h2>
+  <ul class="brief"><li>Each listing is counted on its own. Google reports these with a delay of about ${D.meta.gbpLag} days, so the most recent days fill in later.</li></ul>
+  <div class="lst">${cards}</div>
+  <div class="grid" style="margin-top:18px">
+    <div class="panel s12"><h3>Website search rankings</h3><p class="sub">Average position on Google for the most-searched non-brand terms. Change is over the last 4 weeks. These are website results, not the map listings.</p>
+      ${rl || '<p class="sub">No ranking data yet.</p>'}
+      ${rk.length > 6 ? `<button class="more" id="rkMore">${showAll ? 'Show top 6' : `Show all ${rk.length}`}</button>` : ''}</div>
+  </div>`;
+}
+
+function cust(rg) {
+  const s = D.snapshot, c = s.customers, pt = s.pullThrough;
+  const nc = S(D.daily.newCustomers, rg), ncP = S(D.daily.newCustomers, rg, true);
+  const mo = monthly(D.daily.newCustomers);
+  const head = c.withJob ? `${pct(c.repeat / c.withJob)} of customers have come back for more work.` : 'Customer history builds as jobs complete.';
+  return `<h2 class="head">${esc(head)}</h2>
+  <ul class="brief">
+    <li class="${pt.tuneups && pt.converted / pt.tuneups >= 0.15 ? 'good' : ''}">${pt.tuneups ? `${pct(pt.converted / pt.tuneups)} of tune-ups led to a repair or replacement within 120 days, worth ${fmt$(pt.revenue)}.` : 'Tune-up follow-on work shows once tune-ups have 30 days of history.'}</li>
+    <li class="adj">${fmtN(c.winback12)} past customers haven’t had a job in 12 to 24 months. They are the first group for heating-season outreach.</li>
+  </ul>
+  <div class="stats">
+    ${stat('New customers', fmtN(nc), delta(nc, ncP, rg), last8w(D.daily.newCustomers))}
+    ${stat('Customers served', fmtN(c.withJob), 'all time in Housecall Pro', null)}
+    ${stat('Came back', pct(c.withJob ? c.repeat / c.withJob : null), `${fmtN(c.repeat)} customers`, null)}
+    ${stat('Tune-up follow-on', pct(pt.tuneups ? pt.converted / pt.tuneups : null), `${fmtN(pt.converted)} of ${fmtN(pt.tuneups)} tune-ups`, null)}
+    ${stat('Due for win-back', fmtN(c.winback12), '12–24 months since last job', null)}
+  </div>
+  <div class="grid">
+    <div class="panel s8"><h3>New customers by month</h3><p class="sub">First completed job in Housecall Pro. The current month is to date.</p>
+      ${bars(mo.map((x, i) => ({ label: mLabel(x.m), parts: [{ v: x.v, c: 'var(--c3)' }], faded: i === mo.length - 1 })), { aria: 'New customers by month' })}</div>
+    <div class="panel s4"><h3>Past customers by last visit</h3><p class="sub">Right now</p>
+      <ul class="todo">
+        <li><b class="hot">${fmtN(c.winback12)}</b><span>Last job 12–24 months ago<small>Most likely to rebook a tune-up</small></span></li>
+        <li><b>${fmtN(c.winback24)}</b><span>Last job over 24 months ago<small>Equipment may be near replacement age</small></span></li>
+      </ul></div>
+  </div>`;
+}
+
+// ---------- render ----------
+function render() {
+  const rg = range();
+  const map = { pulse, leads, jobs: jobsView, mkt, google, cust };
+  $('#v-' + V).innerHTML = map[V](rg);
+  const b = $('#rkMore'); if (b) b.onclick = () => { showAll = !showAll; render(); };
+}
+function start() {
+  $('#gate').style.display = 'none';
+  const g = new Date(D.meta.generated);
+  $('#asof').textContent = `Updated ${g.toLocaleString('en-US', { timeZone: D.meta.tz, month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`;
+  $('#foot').innerHTML = `<p>Revenue, jobs and customers come from Housecall Pro. Property management work scheduled in Lessen is not included. Leads, calls and conversations come from GoHighLevel. Tracked calls are the Google Ads, Meta and LSA lines. Ad spend comes from Google Ads and Meta; LSA spend is entered monthly from LSA billing. Listings and rankings come from Google.</p>`;
+  document.querySelectorAll('.ranges button').forEach((b) => b.onclick = () => { R = b.dataset.r; document.querySelectorAll('.ranges button').forEach((x) => x.setAttribute('aria-pressed', x === b)); render(); });
+  document.querySelectorAll('nav.tabs button').forEach((b) => b.onclick = () => { V = b.dataset.v; document.querySelectorAll('nav.tabs button').forEach((x) => x.setAttribute('aria-selected', x === b)); document.querySelectorAll('.view').forEach((s) => s.classList.toggle('on', s.id === 'v-' + V)); render(); window.scrollTo({ top: 0 }); });
+  render();
+  let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(render, 200); });
+}
+})();
+</script>
+</body>
+</html>

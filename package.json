@@ -1,0 +1,11 @@
+{
+  "name": "hvac-dashboard",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "check": "node scripts/check.mjs",
+    "build": "node scripts/build.mjs",
+    "preview": "FIXTURE=1 NO_ENCRYPT=1 node scripts/build.mjs"
+  }
+}

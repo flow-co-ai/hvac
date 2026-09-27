@@ -1,0 +1,89 @@
+{
+  "name": "Quality HVAC by Fibid",
+  "timezone": "America/Chicago",
+  "ads_active": true,
+  "routing_fix_date": "2026-09-18",
+  "history_start": "2025-09-01",
+  "hcp": {
+    "base": "https://api.housecallpro.com",
+    "amounts_in_cents": true
+  },
+  "ghl": {
+    "base": "https://services.leadconnectorhq.com",
+    "version": "2021-07-28",
+    "app_base": "https://app.gohighlevel.com",
+    "message_window_days": 90,
+    "automated_sources": "workflow|campaign|bulk|automation|api"
+  },
+  "windsor": {
+    "google_ads": "573-729-0129",
+    "meta": "1100171161349243",
+    "search_console": "sc-domain:qualityhvac365.com",
+    "listings": [
+      {
+        "id": "locations/6129595594309014752",
+        "name": "Quality HVAC Solutions",
+        "area": "Crestwood"
+      },
+      {
+        "id": "locations/935628167137586436",
+        "name": "Fibid Heating & Air Conditioning",
+        "area": "",
+        "_moved": "Set \"moved\": \"YYYY-MM-DD\" once the Burr Ridge address is live on Google."
+      },
+      {
+        "id": "locations/9013300148944922826",
+        "name": "Quality HVAC by Fibid",
+        "area": "Homer Glen"
+      }
+    ],
+    "gbp_lag_days": 3,
+    "exclude_campaigns": "croa|fcra|tcpa|dental|sleep apnea|full smile|opendental|digital ocean|hir(e|ing)|job post|career|recruit|now hiring|bws",
+    "brand_queries": "quality|fibid|hvac ?365|qualityhvac"
+  },
+  "channels": [
+    {
+      "name": "HCP sync",
+      "exclude": true,
+      "match": "housecall|\\bhcp\\b|work order|lessen"
+    },
+    {
+      "name": "LSA",
+      "match": "\\blsa\\b|local service"
+    },
+    {
+      "name": "Google Ads",
+      "match": "google ?ads|adwords|gclid|\\bppc\\b|\\bcpc\\b|paid search"
+    },
+    {
+      "name": "Meta",
+      "match": "facebook|\\bmeta\\b|instagram|\\bfb\\b|\\big\\b|lead ?form"
+    },
+    {
+      "name": "Google listings",
+      "match": "\\bgbp\\b|business profile|google my business|\\bgmb\\b|maps"
+    },
+    {
+      "name": "Website",
+      "match": "website|organic|form|chat widget|seo"
+    },
+    {
+      "name": "Text campaign",
+      "match": "tune.?up|sms campaign|drip"
+    }
+  ],
+  "job_types": [
+    {
+      "name": "Replacement",
+      "match": "replace|install|new (system|unit|furnace|ac|a/c|equipment)|changeout|change out"
+    },
+    {
+      "name": "Tune-up",
+      "match": "tune|maint|clean and check|inspection|check.?up|precision|safety check"
+    },
+    {
+      "name": "Repair",
+      "match": "repair|service call|diagnos|no heat|no cool|not (heating|cooling)|leak|emergency|trouble"
+    }
+  ]
+}
