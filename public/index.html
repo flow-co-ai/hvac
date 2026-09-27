@@ -87,6 +87,8 @@ tr.tot td:first-child{padding-left:12px;border-radius:10px 0 0 10px}tr.tot td:la
 .lcard .big{font-weight:700;font-size:32px;line-height:1;letter-spacing:-.6px}
 .rank{display:grid;grid-template-columns:40px minmax(0,1fr) 72px 96px;gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line2);font-size:14.5px}
 .rank .p{display:flex;align-items:center;justify-content:center;height:32px;border-radius:9px;background:var(--sky-soft);color:var(--sky-d);font-weight:700;font-size:15px}
+.stackrow{display:grid;grid-template-columns:110px minmax(0,1fr) 50px;gap:12px;align-items:center;padding:7px 0;font-size:14.5px}.stackrow.tot{border-top:1px solid var(--line);margin-top:4px;padding-top:11px;font-weight:600}.stackrow b{text-align:right}
+.stack{display:flex;height:18px;border-radius:6px;overflow:hidden;background:#eef3f8}.stack i{display:block;height:100%;cursor:pointer}.stack i:hover{opacity:.8}
 .rank.sd{grid-template-columns:40px minmax(0,1fr) 84px}
 .rank .q{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rank .c{text-align:right;font-size:13px}
@@ -413,7 +415,7 @@ function pulse(rg) {
         <li class="open" data-open="unscheduled" tabindex="0" role="button"><b>${D.snapshot.needsScheduling}</b><span>Jobs that still need scheduling<small>Created in the last 120 days.</small></span><em class="go">View ›</em></li>
         ${!D.audit?.callMessages ? '' : `<li class="open" data-open="missed|7" tabindex="0" role="button"><b class="${m7 ? 'hot' : ''}">${fmtN(m7)}</b><span>Missed tracked calls, last 7 days<small>Includes voicemails.</small></span><em class="go">View ›</em></li>`}
         <li class="open" data-open="tuneDue" tabindex="0" role="button"><b>${fmtN(D.lists.tuneDue.length)}</b><span>Customers due for a tune-up<small>Last one 10–14 months ago.</small></span><em class="go">View ›</em></li>
-      </ul>${extRow(ext(`${HCPAPP}/estimates`, 'Estimates in Housecall Pro'), ext(`${HCPAPP}/jobs`, 'Jobs in Housecall Pro'), ext(D.snapshot.link, 'Conversations in GHL', 'ghl'))}</div>
+      </ul></div>
     <div class="panel s6"><h3>Where the revenue came from</h3><p class="sub">${esc(rg.label)}, by how each customer first found the business</p>
       <div class="hbars">${hbar(bySrc, srcColor, bySrc[0]?.[1], (ch) => ch === 'Existing customers' ? null : `credited|${ch}`) || '<p class="sub">No completed jobs in this range.</p>'}</div>
       ${rev ? `<p class="note">${pct(tracked / rev)} came from customers brought in by a tracked source since ${fmtDate(D.marketingStart)}.</p>` : ''}</div>
@@ -465,6 +467,14 @@ function leads(rg) {
       ${bySource.map(([ch, v, col]) => `<tr class="open" data-open="leads|${esc(ch)}" tabindex="0"><td><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${col};margin-right:7px"></i>${esc(ch)}</td><td>${fmtN(v)}</td><td>${pct(v / (ld || 1))}</td></tr>`).join('') || '<tr><td colspan="3">No new leads in this range.</td></tr>'}
       </tbody></table></div>
       <p class="note">Calls to the main phone line aren’t tracked here, so callers from the Google listings who dial it directly don’t appear as leads.</p></div>
+    ${(() => { const lo = D.leadOutcomes; if (!lo || !Object.keys(lo.byCh).length) return ''; const cats = lo.cats;
+      const col = { 'Booked a job': 'var(--up)', 'In Housecall Pro, no job': 'var(--c5)', 'Answered, not booked': 'var(--sky)', 'Missed, followed up, not booked': 'var(--c7)', 'Missed, never followed up': 'var(--flame)', 'No call, replied to': 'var(--c4)', 'No call, no reply': '#cfd9e3' };
+      const tot = Object.fromEntries(cats.map((c) => [c, 0])); Object.values(lo.byCh).forEach((v) => cats.forEach((c) => (tot[c] += v[c]))); const all = cats.reduce((a, c) => a + tot[c], 0);
+      const bar = (v, n) => `<div class="stack">${cats.map((c) => v[c] ? `<i data-open="outcome|${n}~${c}" title="${esc(c)}: ${v[c]}" style="width:${(v[c] / (cats.reduce((a, x) => a + v[x], 0) || 1) * 100).toFixed(2)}%;background:${col[c]}"></i>` : '').join('')}</div>`;
+      return `<div class="panel s12"><div class="phead"><h3>What happened to ad leads</h3><button class="linkbtn" data-open="outcome|">See every lead</button></div><p class="sub">Leads from Google Ads, LSA and Meta in the last ${D.meta.messageWindow} days, matched to calls and texts in GoHighLevel and customers in Housecall Pro. Click a color to see those leads.</p>
+        ${Object.entries(lo.byCh).map(([n, v]) => `<div class="stackrow"><span>${esc(n)}</span>${bar(v, n)}<b>${fmtN(cats.reduce((a, c) => a + v[c], 0))}</b></div>`).join('')}
+        <div class="stackrow tot"><span>All ads</span>${bar(tot, '')}<b>${fmtN(all)}</b></div>
+        <div class="legend">${cats.filter((c) => tot[c]).map((c) => `<span class="open" data-open="outcome|~${c}"><i style="background:${col[c]}"></i>${esc(c)} ${fmtN(tot[c])} (${pct(tot[c] / (all || 1))})</span>`).join('')}</div></div>`; })()}
     <div class="panel s8"><h3>When leads come in</h3><p class="sub">New leads by hour and day, last 90 days. Orange hours fall outside live answering (${fmtHr(D.answering[0])} to ${fmtHr(D.answering[1])}).</p>
       ${heatGrid(D.leadHeat, 'rgba(53,174,240,', D.answering)}
       <p class="note">${pct(offShare)} of leads arrive outside live answering hours.</p></div>
@@ -518,13 +528,13 @@ function jobsView(rg) {
     <div class="panel s7"><h3>By technician</h3><p class="sub">${esc(rg.label)}. Each job counts for the first tech assigned in Housecall Pro.</p>
       <div class="tbl"><table><thead><tr><th>Technician</th><th>Jobs</th><th>Revenue</th><th>Avg job</th><th>Replacements</th></tr></thead><tbody>
       ${techRows.map((x) => `<tr><td>${esc(x.n)}</td><td>${fmtN(x.c)}</td><td>${fmt$(x.v)}</td><td>${x.c ? fmt$(x.v / x.c) : '—'}</td><td>${fmtN(x.r)}${x.c ? ` <span class="tag">${pct(x.r / x.c)}</span>` : ''}</td></tr>`).join('') || '<tr><td colspan="5">No completed jobs in this range.</td></tr>'}
-      </tbody></table></div>${extRow(ext(`${HCPAPP}/jobs`, 'Jobs in Housecall Pro'))}</div>
+      </tbody></table></div></div>
     <div class="panel s5"><h3>Estimates</h3><p class="sub">Sent ${esc(rg.short.replace(/^over /, ''))}</p>
       <div class="split"><div class="box"><div class="k">Close rate</div><div class="v">${pct(esDecided ? esWon.length / esDecided : null)}</div><small>${fmtN(esWon.length)} won of ${fmtN(esDecided)} decided</small></div>
       <div class="box"><div class="k">Days to book</div><div class="v">${esDays == null ? '—' : Math.round(esDays)}</div><small>median, sent to job booked</small></div></div>
       <div class="row2"><span>Sent</span><b>${fmtN(es.length)}</b></div><div class="row2"><span>Won value</span><b>${fmt$(esWon.reduce((a, x) => a + x[2], 0))}</b></div><div class="row2"><span>Still open</span><b>${fmtN(es.filter((x) => x[1] === 0).length)}</b></div>
-      <div class="extrow"><button class="linkbtn" data-open="estimates">See open estimates</button>${ext(`${HCPAPP}/estimates`, 'Estimates in Housecall Pro')}</div></div>
-    <div class="panel s12"><div class="phead"><h3>On the schedule, next 14 days</h3>${ext(HCPAPP, 'Schedule in Housecall Pro')}</div><p class="sub">Jobs booked in Housecall Pro, by day</p>
+      <div class="extrow"><button class="linkbtn" data-open="estimates">See open estimates</button></div></div>
+    <div class="panel s12"><h3>On the schedule, next 14 days</h3><p class="sub">Jobs booked in Housecall Pro, by day</p>
       ${bars(sch.map((x) => ({ label: new Date(x.d + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' }), parts: [{ v: x.n, c: 'var(--sky)' }] })), { h: 200, w: 900, aria: 'Jobs scheduled next 14 days' })}</div>
   </div>`;
 }
@@ -562,12 +572,14 @@ function mkt(rg) {
     const tot = D.paid.reduce((a, ch) => a + (cc[ch]?.customers || 0), 0), totS = D.paid.reduce((a, ch) => a + (spm[ch] || 0), 0);
     return { m: mTick(m, 0).replace(/ ’\d\d/, '') + (m === D.meta.today.slice(0, 7) ? ' (so far)' : ''), cells, all: tot ? totS / tot : null };
   });
+  const loT = (() => { const lo = D.leadOutcomes; if (!lo) return null; const t = {}; Object.values(lo.byCh).forEach((v) => lo.cats.forEach((c) => (t[c] = (t[c] || 0) + v[c]))); return t; })();
   const a = D.attribution, newTot = a.phone + a.email + a.name + a.hcp_field + a.not_captured;
   const who = priced.length < paid.length ? priced.map((r) => r.ch).join(' and ') : 'ads';
   const bookedAds = D.lists.leads.filter((x) => D.paid.includes(x.ch) && inR(x.d, rg) && x.b).length;
   const head = !T.customers && T.leads ? `${fmtN(T.leads)} leads from ads ${rg.short.replace(/^in /, 'in ')}, ${fmtN(bookedAds)} with a job booked so far.` : roi != null && roiRev ? `Customers from ${who} have paid ${fmt$(roiRev)} so far, ${roi.toFixed(1)}× what ${priced.length < paid.length ? 'those ads' : 'the ads'} cost.` : `${fmtN(T.customers)} new customers came from ads.`;
   return `<h2 class="head">${esc(head)}</h2>
   <ul class="brief">
+    ${loT ? (() => { const all = Object.values(loT).reduce((x, y) => x + y, 0); return all ? `<li class="adj">Of ${fmtN(all)} ad leads in the last ${D.meta.messageWindow} days, ${fmtN(loT['Booked a job'])} booked a job and ${fmtN(loT['Missed, never followed up'])} were missed and never followed up. The Calls & leads tab shows each one.</li>` : ''; })() : ''}
     <li>Revenue is completed jobs in Housecall Pro. Each new customer is matched to the lead that came in before their first job.</li>
     ${newTot ? `<li class="${a.not_captured / newTot > 0.3 ? 'adj' : ''}">Since ${fmtDate(D.marketingStart)}, ${pct(1 - a.not_captured / newTot)} of new customers were matched to a source. The rest are counted but credited to no channel.</li>` : ''}
     ${miss.length ? `<li class="adj">LSA spend for ${miss.map(mLong).join(', ')} hasn’t been entered, so LSA return is left out for those months.</li>` : curMiss ? `<li>LSA spend for ${mLong(D.meta.today)} is added once the month’s bill closes.</li>` : ''}
@@ -581,7 +593,7 @@ function mkt(rg) {
     ${stat('Return on spend', roi == null ? '—' : roi.toFixed(1) + '×', priced.length < paid.length ? 'LSA left out until entered' : '', null)}
   </div>
   <div class="grid">
-    <div class="panel s12"><div class="phead"><h3>Results by channel</h3><div class="extrow" style="margin:0"><button class="linkbtn" data-open="credited">Check every match</button>${ext(`${HCPAPP}/customers`, 'Customers in Housecall Pro')}</div></div><p class="sub">Click a channel to see each customer, how they were matched, and links to Housecall Pro and GoHighLevel. Leads that came in and customers whose first job was in ${esc(monthSpan(rg))}. Paid so far counts every completed job from those customers.</p>
+    <div class="panel s12"><div class="phead"><h3>Results by channel</h3><button class="linkbtn" data-open="credited">Check every match</button></div><p class="sub">Click a channel to see each customer, how they were matched, and links to Housecall Pro and GoHighLevel. Leads that came in and customers whose first job was in ${esc(monthSpan(rg))}. Paid so far counts every completed job from those customers.</p>
       <div class="tbl"><table><thead><tr><th>Channel</th><th>Spent</th><th>Leads</th><th>Per lead</th><th>New customers</th><th>Per customer</th><th>Paid so far</th><th>Return</th></tr></thead><tbody>
       ${paid.map(row).join('')}
       <tr class="tot"><td>Ads total</td><td>${fmt$(T.s)}</td><td>${fmtN(T.leads)}</td><td>${T.leads && T.s ? fmt$(T.s / T.leads) : '—'}</td><td>${fmtN(T.customers)}</td><td>${T.customers && T.s ? fmt$(T.s / T.customers) : '—'}</td><td>${fmt$(T.revenue)}</td><td>${roi == null ? '—' : roi.toFixed(1) + '×'}</td></tr>
@@ -663,7 +675,7 @@ function cust(rg) {
       ${ltv.map((x) => `<tr class="open" data-open="credited|${esc(x.ch)}" tabindex="0"><td>${esc(x.ch)}</td><td>${fmtN(x.n)}</td><td>${fmt$(x.avg)}</td><td>${pct(x.rep)}</td><td>${fmt$(x.top)}</td></tr>`).join('')}
       </tbody></table></div>
       <p class="note">The list covers all ranges, since value builds over time. Click a source to see each customer.</p></div>
-    <div class="panel s4"><div class="phead"><h3>Past customers by last visit</h3>${ext(`${HCPAPP}/customers`, 'Housecall Pro')}</div><p class="sub">Right now</p>
+    <div class="panel s4"><h3>Past customers by last visit</h3><p class="sub">Right now</p>
       <ul class="todo">
         <li class="open" data-open="tuneDue" tabindex="0" role="button"><b class="hot">${fmtN(D.lists.tuneDue.length)}</b><span>Due for a tune-up now<small>Last tune-up 10–14 months ago.</small></span><em class="go">View ›</em></li>
         <li class="open" data-open="winback" tabindex="0" role="button"><b>${fmtN(c.winback12)}</b><span>Last job 12–24 months ago<small>Most likely to rebook a tune-up.</small></span><em class="go">View ›</em></li>
@@ -718,6 +730,12 @@ const LISTS = {
     const items = coldLeads();
     return { title: 'Leads going cold', sub: 'Came in during the last 14 days with no job booked in Housecall Pro yet. Newest first.', items,
       row: (x) => `<div class="di"><div class="nm">${esc(x.n)}<span class="tag">${esc(x.ch)}</span></div><div class="vl"><span class="tag warn">${Math.round((new Date(D.meta.today) - new Date(x.d)) / 864e5)} days</span></div><div class="mt">Came in ${fmtDate(x.d)}. GHL source: ${esc(x.raw)}.</div>${links(null, x.g, 'GHL contact')}</div>` };
+  },
+  outcome(arg) {
+    const [ch, k] = arg.split('~');
+    const items = D.lists.outcomes.filter((x) => (!ch || x.ch === ch) && (!k || x.k === k));
+    return { title: k || 'Ad leads by outcome', sub: `${ch ? ch + ' leads' : 'Ad leads'} from the last ${D.meta.messageWindow} days${k ? '' : ', by what happened after they came in'}.`, items,
+      row: (x) => `<div class="di"><div class="nm">${esc(x.n)}${ch ? '' : `<span class="tag">${esc(x.ch)}</span>`}</div><div class="vl"><span class="tag ${x.k === 'Booked a job' ? 'ok' : /never|no reply/.test(x.k) ? 'warn' : ''}">${esc(x.k)}</span></div><div class="mt">Came in ${fmtDate(x.d)}.</div>${links(x.h, x.g, 'GHL contact')}</div>` };
   },
   tuneDue() {
     const items = D.lists.tuneDue;
