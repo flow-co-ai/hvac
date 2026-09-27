@@ -38,8 +38,9 @@
       }
     ],
     "gbp_lag_days": 3,
-    "exclude_campaigns": "croa|fcra|tcpa|dental|sleep apnea|full smile|opendental|digital ocean|hir(e|ing)|job post|career|recruit|now hiring|bws",
-    "brand_queries": "quality|fibid|hvac ?365|qualityhvac"
+    "exclude_campaigns": "croa|fcra|tcpa|dental|sleep apnea|full smile|opendental|digital ocean|hir(e|ing)|job post|career|recruit|now hiring",
+    "brand_queries": "quality|fibid|hvac ?365|qualityhvac",
+    "exclude_google_lsa": "^ghs|local services|home services"
   },
   "channels": [
     {
