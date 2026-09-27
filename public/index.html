@@ -93,6 +93,9 @@ tr.tot td:first-child{padding-left:12px;border-radius:10px 0 0 10px}tr.tot td:la
 .grp{font-size:13px;font-weight:600;color:var(--muted);margin:16px 0 2px}
 .more{background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 14px;margin-top:12px;cursor:pointer;font-size:14px;font-weight:500}
 .note{font-size:13px;color:var(--muted);margin-top:12px}
+.row2{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line2);font-size:14.5px}
+.money{background:linear-gradient(135deg,var(--navy),#1d3a5c);color:#fff;border-radius:14px;padding:14px 16px;margin-bottom:12px}
+.money div{display:flex;justify-content:space-between;align-items:baseline;gap:10px}.money span{font-size:13.5px;color:#b9cadb}.money b{font-size:28px;font-weight:700;letter-spacing:-.6px}.money small{display:block;color:#b9cadb;font-size:12.5px;margin-top:4px;line-height:1.4}
 .hb{display:grid;grid-template-columns:minmax(0,140px) minmax(0,1fr) 70px;gap:12px;align-items:center;padding:7px 0;font-size:14.5px}
 .hb span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.hb div{background:#eef3f8;border-radius:99px;height:10px}.hb i{display:block;height:100%;border-radius:99px}.hb b{text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
 .heat{display:grid;grid-template-columns:36px repeat(24,minmax(0,1fr));gap:3px;font-size:11px;color:var(--muted)}
@@ -290,7 +293,7 @@ function bars(series, opt = {}) {
   // series: [{label, parts:[{v,c}], faded}]
   const narrow = window.innerWidth < 560, W = narrow ? 380 : (opt.w || 640), H = narrow ? Math.round((opt.h || 220) * 0.95) : (opt.h || 220), pl = 46, pb = 26, pt = 14, n = series.length;
   const tot = series.map((s) => s.parts.reduce((a, p) => a + p.v, 0));
-  const raw = Math.max(1, ...tot), mag = Math.pow(10, Math.floor(Math.log10(raw / 3))), step = [1, 2, 2.5, 5, 10].map((k) => k * mag).find((st) => st * 3 >= raw) || mag * 10;
+  const raw = Math.max(1, ...tot), mag = Math.pow(10, Math.floor(Math.log10(raw / 3))), step = (opt.money ? [1, 2, 2.5, 5, 10] : [1, 2, 5, 10]).map((k) => k * mag).find((st) => st * 3 >= raw) || mag * 10;
   const mx = step * 3, bw = (W - pl) / n;
   const y = (v) => pt + (H - pt - pb) * (1 - v / mx);
   let g = '';
@@ -328,6 +331,17 @@ function cohortsIn(rg) {
   return out;
 }
 const monthSpan = (rg) => { const ms = rg.months; return ms.length === 1 ? mLong(ms[0]) : `${mLabel(ms[0])} ’${ms[0].slice(2, 4)} to ${mLabel(ms[ms.length - 1])} ’${ms[ms.length - 1].slice(2, 4)}`; };
+// same days one year earlier (days are consecutive, so 365 back; 366 across a leap day)
+function yoy(arr, rg) { const back = D.days[rg.i0].slice(5) === (D.days[rg.i0 - 365] || '').slice(5) ? 365 : 366; const a = rg.i0 - back, b = rg.i1 - back; return a >= 0 ? sum(arr, a, b) : null; }
+const avgJob90 = () => { const n = D.days.length; const r = sum(D.daily.rev.total, n - 90, n - 1), c = sum(D.daily.cnt.total, n - 90, n - 1); return c ? r / c : 0; };
+const coldLeads = () => { const cut = D.days[Math.max(0, D.days.length - 14)]; return D.lists.leads.filter((x) => x.d >= cut && !x.b); };
+const med = (a) => { if (!a.length) return null; const s = [...a].sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+function heatGrid(grid, hot = 'rgba(53,174,240,', off) {
+  const mx = Math.max(1, ...grid.flat()), days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  let h = '<div></div>' + Array.from({ length: 24 }, (_, i) => `<div class="hr">${i % 3 === 0 ? (i === 0 ? '12a' : i < 12 ? i + 'a' : i === 12 ? '12p' : (i - 12) + 'p') : ''}</div>`).join('');
+  grid.forEach((row, d) => { h += `<div class="lab">${days[d]}</div>` + row.map((v, i) => { const out = off && (i < off[0] || i >= off[1]); return `<div title="${days[d]} ${i}:00, ${v}" style="background:${v ? `${out ? 'rgba(242,107,29,' : hot}${(0.2 + 0.8 * v / mx).toFixed(2)})` : out ? '#fbf1ea' : '#f2f6fa'}"></div>`; }).join(''); });
+  return `<div class="heat">${h}</div>`;
+}
 function leadsTotal(rg, prev) { let s = 0; for (const ch of D.channels) s += S(D.daily.leads[ch], rg, prev) ?? 0; return s; }
 
 // ---------- views ----------
@@ -356,15 +370,22 @@ function pulse(rg) {
   const brief = [];
   if (prev != null && rg.vs && R !== 'last') brief.push([rev >= prev ? 'good' : 'bad', `Revenue is ${rev >= prev ? 'up' : 'down'} ${pct(Math.abs(rev - prev) / (prev || 1))} ${rg.vs}, on ${fmtN(jobs)} completed jobs averaging ${fmt$(tk)}.`]);
   if (adCust) brief.push([roi >= 1 ? 'good' : 'adj', `Ads brought in ${fmtN(adCust)} new customers who have paid ${fmt$(adRev)} so far${roi != null ? `, ${roi.toFixed(1)}× what ${priced.length < D.paid.length ? 'those ads' : 'the ads'} cost` : ''}.`]);
+  const ly = yoy(r, rg);
+  if (ly) brief.splice(1, 0, [rev >= ly ? 'good' : 'bad', `Same ${R === 'month' ? 'days' : 'period'} last year: ${fmt$(ly)}, so ${rev >= ly ? 'up' : 'down'} ${pct(Math.abs(rev - ly) / ly)} year over year.`]);
   if (byType[0] && rev) brief.push(['', `${byType[0][0]} work brought in ${pct(byType[0][1] / rev)} of revenue, at ${fmt$(byType[0][1] / (byType[0][2] || 1))} a job.`]);
+  const cpn = (D.campaigns || []).find((c) => c.opps);
+  if (cpn) brief.push([cpn.revenue ? 'good' : '', `${cpn.name} campaign: ${fmtN(cpn.opps)} customers in the pipeline, ${fmtN(cpn.booked)} booked, ${fmt$(cpn.revenue)} paid so far.`]);
   if (e.value || w.total) brief.push(['adj', `${fmt$(e.value)} in estimates and ${fmtN(w.total)} customer conversations are waiting on the team.`]);
+  const cold = coldLeads(), aj = avgJob90();
+  const n = D.days.length, tuAvg = (sum(D.daily.rev['Tune-up'], n - 365, n - 1) / (sum(D.daily.cnt['Tune-up'], n - 365, n - 1) || 1)) || 0;
+  const onTable = e.value + cold.length * aj + D.lists.tuneDue.length * tuAvg;
   const mo = monthly(r);
   const m7 = sum(D.daily.calls.missed, D.days.length - 7, D.days.length - 1) + sum(D.daily.calls.voicemail, D.days.length - 7, D.days.length - 1);
   const hbar = (rows, color, max, open) => rows.map(([ch, v]) => `<div class="hb${open && open(ch) ? ' open' : ''}"${open && open(ch) ? ` data-open="${open(ch)}" tabindex="0"` : ''}><span>${esc(ch)}</span><div><i style="width:${(v / (max || 1) * 100).toFixed(1)}%;background:${color(ch)}"></i></div><b>${fmt$(v)}</b></div>`).join('');
   const srcColor = (ch) => D.paid.includes(ch) ? 'var(--sky)' : ch === 'Existing customers' ? '#8aa0b6' : ch === 'Source not captured' ? '#cfd9e3' : 'var(--c5)';
   const typeColor = (t) => ({ Repair: 'var(--flame)', Replacement: 'var(--sky)', 'Tune-up': 'var(--c3)' }[t] || 'var(--c6)');
   return `<h2 class="head">${esc(head)}</h2>
-  <ul class="brief">${brief.slice(0, 4).map(([c, t]) => `<li class="${c}">${esc(t)}</li>`).join('')}</ul>
+  <ul class="brief">${brief.slice(0, 5).map(([c, t]) => `<li class="${c}">${esc(t)}</li>`).join('')}</ul>
   <div class="stats">
     ${stat('Revenue', fmt$(rev), delta(rev, prev, rg), last8w(r), 'var(--sky)')}
     ${stat('Jobs completed', fmtN(jobs), delta(jobs, jobsP, rg), last8w(D.daily.cnt.total))}
@@ -376,12 +397,14 @@ function pulse(rg) {
     <div class="panel s8"><h3>Revenue by month</h3><p class="sub">Completed jobs in Housecall Pro. The current month is to date.</p>
       ${bars(mo.map((x, i) => ({ label: mTick(x.m, i), parts: [{ v: x.v, c: 'var(--sky)' }], faded: i === mo.length - 1 })), { money: true, aria: 'Revenue by month' })}</div>
     <div class="panel s4"><h3>Waiting on the team</h3><p class="sub">Open right now</p>
+      <div class="money"><div><span>Money on the table</span><b>${fmt$(onTable)}</b></div><small>${fmt$(e.value)} in estimates, ${fmtN(cold.length)} leads going cold at about ${fmt$(aj)} a job, and ${fmtN(D.lists.tuneDue.length)} tune-ups due at ${fmt$(tuAvg)}.</small></div>
       <ul class="todo">
+        <li class="open" data-open="cold" tabindex="0" role="button"><b class="${cold.length ? 'hot' : ''}">${fmtN(cold.length)}</b><span>Leads going cold<small>Last 14 days, no job booked.</small></span><em class="go">View ›</em></li>
         <li class="open" data-open="estimates" tabindex="0" role="button"><b style="font-size:17px">${fmt$(e.value)}</b><span>${e.open} estimates not yet approved<small>${e.aged} older than 30 days.</small></span><em class="go">View ›</em></li>
         <li class="open" data-open="waiting" tabindex="0" role="button"><b class="${w.total ? 'hot' : ''}">${w.total}</b><span>Conversations waiting on a reply<small>${w.d3p} waiting more than 3 days.</small></span><em class="go">View ›</em></li>
         <li class="open" data-open="unscheduled" tabindex="0" role="button"><b>${D.snapshot.needsScheduling}</b><span>Jobs that still need scheduling<small>Created in the last 120 days.</small></span><em class="go">View ›</em></li>
         ${!D.audit?.callMessages ? '' : `<li class="open" data-open="missed|7" tabindex="0" role="button"><b class="${m7 ? 'hot' : ''}">${fmtN(m7)}</b><span>Missed tracked calls, last 7 days<small>Includes voicemails.</small></span><em class="go">View ›</em></li>`}
-        <li class="open" data-open="winback" tabindex="0" role="button"><b>${fmtN(D.snapshot.customers.winback12)}</b><span>Past customers due for a tune-up<small>No job in 12–24 months.</small></span><em class="go">View ›</em></li>
+        <li class="open" data-open="tuneDue" tabindex="0" role="button"><b>${fmtN(D.lists.tuneDue.length)}</b><span>Customers due for a tune-up<small>Last one 10–14 months ago.</small></span><em class="go">View ›</em></li>
       </ul></div>
     <div class="panel s6"><h3>Where the revenue came from</h3><p class="sub">${esc(rg.label)}, by how each customer first found the business</p>
       <div class="hbars">${hbar(bySrc, srcColor, bySrc[0]?.[1], (ch) => ch === 'Existing customers' ? null : `credited|${ch}`) || '<p class="sub">No completed jobs in this range.</p>'}</div>
@@ -391,6 +414,7 @@ function pulse(rg) {
       <p class="note">${byType.map(([t, v, n]) => `${t}: ${fmtN(n)} jobs at ${fmt$(v / (n || 1))} each`).join('. ')}.</p></div>
   </div>`;
 }
+const fmtHr = (h) => h === 0 ? '12am' : h < 12 ? h + 'am' : h === 12 ? '12pm' : (h - 12) + 'pm';
 const fmtDate = (d) => { const [y, m, dd] = d.split('-'); return `${MN[+m - 1]} ${+dd}`; };
 
 function leads(rg) {
@@ -408,6 +432,8 @@ function leads(rg) {
   heat.forEach((row, d) => { hm += `<div class="lab">${days[d]}</div>` + row.map((v, h) => `<div title="${days[d]} ${h}:00, ${v} missed of ${all[d][h]} calls" style="background:${v ? `rgba(242,107,29,${0.18 + 0.82 * v / mx})` : all[d][h] ? '#dff1fc' : '#f2f6fa'}"></div>`).join(''); });
   const rate = (o) => { const t = o.answered + o.missed + o.voicemail; return t ? (o.missed + o.voicemail) / t : null; };
   const head = noCalls ? `${fmtN(ld)} new leads ${rg.short}.` : tot ? `${pct((mis + vm) / tot)} of tracked calls were missed or went to voicemail.` : `${fmtN(ld)} new leads ${rg.short}.`;
+  const offShare = (() => { let t = 0, o = 0; D.leadHeat.forEach((row) => row.forEach((v, h) => { t += v; if (h < D.answering[0] || h >= D.answering[1]) o += v; })); return t ? o / t : null; })();
+  const coldBy = Object.entries(coldLeads().reduce((a, x) => ((a[x.ch] = (a[x.ch] || 0) + 1), a), {})).sort((a, b) => b[1] - a[1]);
   const bookedN = D.lists.leads.filter((x) => x.d >= D.days[rg.i0] && x.d <= D.days[rg.i1] && x.b).length;
   const bySource = D.channels.map((ch, k) => [ch, S(D.daily.leads[ch], rg), COLORS[k % COLORS.length]]).filter((x) => x[1]).sort((a, b) => b[1] - a[1]);
   return `<h2 class="head">${esc(head)}</h2>
@@ -418,7 +444,7 @@ function leads(rg) {
   </ul>
   <div class="stats">
     ${stat('New leads', fmtN(ld), delta(ld, ldP, rg), last8w(D.channels.reduce((a, ch) => a.map((v, i) => v + D.daily.leads[ch][i]), new Array(D.days.length).fill(0))), null, 'leads')}
-    ${noCalls ? `${stat('Booked', fmtN(bookedN), ld ? pct(bookedN / ld) + ' of leads' : '', null)}${stat('Not booked yet', fmtN(ld - bookedN), 'open in the list', null, null, 'leads')}${stat('Waiting on a reply', fmtN(D.snapshot.waiting.total), 'right now', null, null, 'waiting')}` : `${stat('Tracked calls', fmtN(tot), crg.i0 > rg.i0 ? `last ${D.meta.messageWindow} days` : '', last8w(c.answered.map((v, i) => v + c.missed[i] + c.voicemail[i])))}
+    ${noCalls ? `${stat('Booked', fmtN(bookedN), ld ? pct(bookedN / ld) + ' of leads' : '', null)}${stat('Going cold', fmtN(coldLeads().length), 'last 14 days, not booked', null, 'var(--flame)', 'cold')}${stat('Waiting on a reply', fmtN(D.snapshot.waiting.total), 'right now', null, null, 'waiting')}` : `${stat('Tracked calls', fmtN(tot), crg.i0 > rg.i0 ? `last ${D.meta.messageWindow} days` : '', last8w(c.answered.map((v, i) => v + c.missed[i] + c.voicemail[i])))}
     ${stat('Missed', fmtN(mis), tot ? pct(mis / tot) + ' of calls' : '', last8w(c.missed), 'var(--flame)', 'missed')}
     ${stat('Voicemail', fmtN(vm), tot ? pct(vm / tot) + ' of calls' : '', last8w(c.voicemail))}
     ${stat('Median first reply', resp.median == null ? '—' : resp.median < 1 ? '<1 min' : resp.median < 60 ? Math.round(resp.median) + ' min' : (resp.median / 60).toFixed(1) + ' hr', `new leads, last ${D.meta.messageWindow} days`, null)}`}
@@ -431,6 +457,11 @@ function leads(rg) {
       ${bySource.map(([ch, v, col]) => `<tr class="open" data-open="leads|${esc(ch)}" tabindex="0"><td><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${col};margin-right:7px"></i>${esc(ch)}</td><td>${fmtN(v)}</td><td>${pct(v / (ld || 1))}</td></tr>`).join('') || '<tr><td colspan="3">No new leads in this range.</td></tr>'}
       </tbody></table></div>
       <p class="note">Calls to the main phone line aren’t tracked here, so callers from the Google listings who dial it directly don’t appear as leads.</p></div>
+    <div class="panel s8"><h3>When leads come in</h3><p class="sub">New leads by hour and day, last 90 days. Orange hours fall outside live answering (${fmtHr(D.answering[0])} to ${fmtHr(D.answering[1])}).</p>
+      ${heatGrid(D.leadHeat, 'rgba(53,174,240,', D.answering)}
+      <p class="note">${pct(offShare)} of leads arrive outside live answering hours.</p></div>
+    <div class="panel s4"><div class="phead"><h3>Leads going cold</h3><button class="linkbtn" data-open="cold">View list</button></div><p class="sub">Last 14 days, no job booked yet</p>
+      <div class="hbars">${coldBy.map(([ch, v]) => `<div class="hb open" data-open="cold" tabindex="0"><span>${esc(ch)}</span><div><i style="width:${(v / (coldBy[0][1] || 1) * 100).toFixed(1)}%;background:var(--flame)"></i></div><b>${fmtN(v)}</b></div>`).join('') || '<p class="sub">Every recent lead has a job booked.</p>'}</div></div>
     ${noCalls ? '' : `<div class="panel s8"><div class="phead"><h3>When calls are missed</h3><button class="linkbtn" data-open="missed">See missed calls</button></div><p class="sub">Missed and voicemail calls by hour, last ${D.meta.messageWindow} days. Darker means more missed. Blue squares had calls, all answered.</p>
       <div class="heat">${hm}</div></div>
     <div class="panel s4"><h3>Before and after the routing change</h3><p class="sub">Share of tracked calls missed or to voicemail. Routing changed ${fmtDate(D.meta.routingFix)}.</p>
@@ -451,6 +482,9 @@ function jobsView(rg) {
   const mm = Object.fromEntries(T.map((t) => [t, byM(t)]));
   const series = mos.map((m, i) => ({ label: mTick(m, i), parts: T.map((t) => ({ v: mm[t][m] || 0, c: col[t] })), faded: i === mos.length - 1 }));
   const sch = D.snapshot.schedule, e = D.snapshot.estimates;
+  const techRows = Object.entries(D.techs || {}).map(([n, o]) => ({ n, c: S(o.cnt, rg), v: S(o.rev, rg), r: S(o.repl, rg) })).filter((x) => x.c).sort((a, b) => b.v - a.v);
+  const es = (D.estStats || []).filter((x) => inR(x[0], rg)), esWon = es.filter((x) => x[1] === 1), esDecided = es.filter((x) => x[1] !== 0).length;
+  const esDays = med(esWon.map((x) => x[3]).filter((x) => x != null));
   const head = repl.v && rev ? `Replacements were ${pct(repl.v / rev)} of revenue on ${fmtN(repl.n)} jobs.` : `${fmtN(n)} jobs completed, averaging ${fmt$(tk)}.`;
   return `<h2 class="head">${esc(head)}</h2>
   <ul class="brief">
@@ -473,6 +507,15 @@ function jobsView(rg) {
       ${rows.map((r) => `<tr><td>${esc(r.t)}</td><td>${fmtN(r.n)}</td><td>${fmt$(r.v)}</td><td>${r.n ? fmt$(r.v / r.n) : '—'}</td></tr>`).join('')}
       <tr class="tot"><td>All</td><td>${fmtN(n)}</td><td>${fmt$(rev)}</td><td>${fmt$(tk)}</td></tr></tbody></table></div>
       <p class="note">Type is read from the job type and description in Housecall Pro.</p></div>
+    <div class="panel s7"><h3>By technician</h3><p class="sub">${esc(rg.label)}. Each job counts for the first tech assigned in Housecall Pro.</p>
+      <div class="tbl"><table><thead><tr><th>Technician</th><th>Jobs</th><th>Revenue</th><th>Avg job</th><th>Replacements</th></tr></thead><tbody>
+      ${techRows.map((x) => `<tr><td>${esc(x.n)}</td><td>${fmtN(x.c)}</td><td>${fmt$(x.v)}</td><td>${x.c ? fmt$(x.v / x.c) : '—'}</td><td>${fmtN(x.r)}${x.c ? ` <span class="tag">${pct(x.r / x.c)}</span>` : ''}</td></tr>`).join('') || '<tr><td colspan="5">No completed jobs in this range.</td></tr>'}
+      </tbody></table></div></div>
+    <div class="panel s5"><h3>Estimates</h3><p class="sub">Sent ${esc(rg.short.replace(/^over /, ''))}</p>
+      <div class="split"><div class="box"><div class="k">Close rate</div><div class="v">${pct(esDecided ? esWon.length / esDecided : null)}</div><small>${fmtN(esWon.length)} won of ${fmtN(esDecided)} decided</small></div>
+      <div class="box"><div class="k">Days to book</div><div class="v">${esDays == null ? '—' : Math.round(esDays)}</div><small>median, sent to job booked</small></div></div>
+      <div class="row2"><span>Sent</span><b>${fmtN(es.length)}</b></div><div class="row2"><span>Won value</span><b>${fmt$(esWon.reduce((a, x) => a + x[2], 0))}</b></div><div class="row2"><span>Still open</span><b>${fmtN(es.filter((x) => x[1] === 0).length)}</b></div>
+      <button class="linkbtn" data-open="estimates" style="margin-top:12px">See open estimates</button></div>
     <div class="panel s12"><h3>On the schedule, next 14 days</h3><p class="sub">Jobs booked in Housecall Pro, by day</p>
       ${bars(sch.map((x) => ({ label: new Date(x.d + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' }), parts: [{ v: x.n, c: 'var(--sky)' }] })), { h: 200, w: 900, aria: 'Jobs scheduled next 14 days' })}</div>
   </div>`;
@@ -500,6 +543,17 @@ function mkt(rg) {
   mos.forEach((m, i) => { series.push({ label: mTick(m, i), parts: [{ v: spM(m), c: 'var(--c6)' }], faded: i === mos.length - 1 }); series.push({ label: '', parts: [{ v: rvM(m), c: 'var(--up)' }], faded: i === mos.length - 1 }); });
   const miss = sp.lsaMissing.filter((m) => m < D.meta.today.slice(0, 7)), curMiss = sp.lsaMissing.includes(D.meta.today.slice(0, 7));
   const stale = Object.entries(D.meta.lastSpend || {}).filter(([, d]) => D.meta.adsActive && (new Date(D.meta.today) - new Date(d)) / 864e5 > 5);
+  const lq = D.paid.concat(D.channels.filter((c) => !D.paid.includes(c) && c !== 'Source not captured')).map((ch) => {
+    const L = D.lists.leads.filter((x) => x.ch === ch && inR(x.d, rg)), C = D.lists.credited.filter((x) => x.src === ch && inR(x.first, rg));
+    return { ch, l: L.length, b: L.filter((x) => x.b).length, cu: C.length, rv: C.reduce((a, x) => a + x.rev, 0), dd: med(C.filter((x) => x.lead).map((x) => (new Date(x.first) - new Date(x.lead)) / 864e5)) };
+  }).filter((x) => x.l || x.cu);
+  const cpm = monthsIn(D.days[Math.max(0, D.days.length - 365)], D.meta.today).filter((m) => m >= D.marketingStart.slice(0, 7)).reverse().map((m) => {
+    const mr = { i0: D.days.indexOf(m + '-01'), i1: Math.min(D.days.length - 1, D.days.findLastIndex((d) => d.startsWith(m))), months: [m] };
+    const spm = paidSpend(mr), cc = D.custCohorts[m] || {};
+    const cells = D.paid.map((ch) => spm[ch] != null && cc[ch]?.customers ? spm[ch] / cc[ch].customers : null);
+    const tot = D.paid.reduce((a, ch) => a + (cc[ch]?.customers || 0), 0), totS = D.paid.reduce((a, ch) => a + (spm[ch] || 0), 0);
+    return { m: mTick(m, 0).replace(/ ’\d\d/, '') + (m === D.meta.today.slice(0, 7) ? ' (so far)' : ''), cells, all: tot ? totS / tot : null };
+  });
   const a = D.attribution, newTot = a.phone + a.email + a.name + a.hcp_field + a.not_captured;
   const who = priced.length < paid.length ? priced.map((r) => r.ch).join(' and ') : 'ads';
   const head = roi != null && roiRev ? `Customers from ${who} have paid ${fmt$(roiRev)} so far, ${roi.toFixed(1)}× what ${priced.length < paid.length ? 'those ads' : 'the ads'} cost.` : `${fmtN(T.customers)} new customers came from ads.`;
@@ -525,6 +579,18 @@ function mkt(rg) {
       ${other.length ? `<tr class="sep"><td colspan="8">Unpaid sources</td></tr>` + other.map(row).join('') : ''}
       </tbody></table></div>
       <p class="note">${Object.keys(D.lsaCharged || {}).length ? `LSA charged leads from Google: ${rg.months.map((m) => `${mLabel(m)} ${fmtN(D.lsaCharged[m] || 0)}`).join(', ')}. ` : ''}Typical HVAC cost per lead: LSA about $51, Meta tune-up offers $35–65, Google non-brand search about $149.</p></div>
+    <div class="panel s7"><h3>Lead quality by channel</h3><p class="sub">${esc(rg.label)}: leads that came in, and customers first served</p>
+      <div class="tbl"><table><thead><tr><th>Channel</th><th>Leads</th><th>Booked</th><th>Became customers</th><th>Days to first job</th><th>Paid per customer</th></tr></thead><tbody>
+      ${lq.map((x) => `<tr class="open" data-open="leads|${esc(x.ch)}" tabindex="0"><td>${esc(x.ch)}</td><td>${fmtN(x.l)}</td><td>${x.l ? pct(x.b / x.l) : '—'}</td><td>${x.l ? pct(Math.min(1, x.cu / x.l)) : '—'}</td><td>${x.dd == null ? '—' : Math.round(x.dd)}</td><td>${x.cu ? fmt$(x.rv / x.cu) : '—'}</td></tr>`).join('')}
+      </tbody></table></div>
+      <p class="note">Booked means a Housecall Pro job was created after the lead came in. Days to first job is the median from lead to first job.</p></div>
+    <div class="panel s5"><h3>Cost per new customer, by month</h3><p class="sub">Ad spend divided by customers whose first job was that month</p>
+      <div class="tbl"><table><thead><tr><th>Month</th>${D.paid.map((ch) => `<th>${esc(ch)}</th>`).join('')}<th>All ads</th></tr></thead><tbody>
+      ${cpm.map((r) => `<tr><td>${r.m}</td>${r.cells.map((v) => `<td>${v == null ? '—' : fmt$(v)}</td>`).join('')}<td><b>${r.all == null ? '—' : fmt$(r.all)}</b></td></tr>`).join('')}
+      </tbody></table></div></div>
+    ${(D.campaigns || []).filter((c) => c.opps).map((c, i) => `<div class="panel s12"><div class="phead"><h3>Campaign: ${esc(c.name)}</h3><button class="linkbtn" data-open="campaign|${i}">See every customer</button></div><p class="sub">Running since ${c.start ? fmtDate(c.start) : '—'}. Revenue counts Housecall Pro jobs within 90 days of each customer entering the pipeline.</p>
+      <div class="stats" style="margin:0 0 14px"><div class="stat"><div class="k">In the pipeline</div><div class="v">${fmtN(c.opps)}</div></div><div class="stat"><div class="k">Booked a job</div><div class="v">${fmtN(c.booked)}</div><div class="d">${pct(c.booked / (c.opps || 1))} of the pipeline</div></div><div class="stat"><div class="k">Jobs completed</div><div class="v">${fmtN(c.done)}</div></div><div class="stat"><div class="k">Paid so far</div><div class="v">${fmt$(c.revenue)}</div></div><div class="stat"><div class="k">Follow-on repairs and replacements</div><div class="v">${fmt$(c.followOn)}</div></div></div>
+      <div class="hbars">${c.stages.map(([st, v]) => `<div class="hb"><span>${esc(st)}</span><div><i style="width:${(v / (c.stages[0][1] || 1) * 100).toFixed(1)}%;background:var(--c3)"></i></div><b>${fmtN(v)}</b></div>`).join('')}</div></div>`).join('')}
     <div class="panel s5"><h3>Where revenue came from</h3><p class="sub">All completed jobs, ${esc(rg.label)}</p>
       <div class="hbars">${hb || '<p class="sub">No completed jobs in this range.</p>'}</div>
       ${allRev ? `<p class="note">${pct(mktRev / allRev)} came from customers brought in by a tracked source since ${fmtDate(D.marketingStart)}.</p>` : ''}</div>
@@ -538,6 +604,7 @@ function google(rg) {
   const L = D.listings, lagFrom = D.days.length - D.meta.gbpLag;
   const tot = L.reduce((s, l) => s + S(l.calls, rg), 0);
   const head = `${fmtN(tot)} calls from the three Google listings, ${rg.short}.`;
+  const jobsR = S(D.daily.cnt.total, rg);
   const cards = L.map((l) => {
     const c = S(l.calls, rg), cP = S(l.calls, rg, true), w = S(l.web, rg), im = S(l.impr, rg), rv = S(l.reviews, rg);
     return `<div class="panel lcard"><h3>${esc(l.name)}</h3><p class="sub">${esc(l.area || 'Service-area listing')}${l.moved ? `, moved ${fmtDate(l.moved)}` : ''}</p>
@@ -546,6 +613,8 @@ function google(rg) {
       <div class="row"><span>Website visits</span><b>${fmtN(w)}</b></div>
       <div class="row"><span>Times shown</span><b>${fmtN(im)}</b></div>
       <div class="row"><span>New reviews</span><b>${fmtN(rv)}</b></div>
+      <div class="row"><span>Calls per 1,000 views</span><b>${im ? (c / im * 1000).toFixed(1) : '—'}</b></div>
+      <div class="row"><span>Reviews per 100 jobs</span><b>${jobsR ? (rv / jobsR * 100).toFixed(1) : '—'}</b></div>
       <div class="row"><span>All reviews</span><b>${fmtN(l.total)}${l.rating ? `<span style="color:var(--muted);font-weight:400">, ${l.rating.toFixed(1)} stars</span>` : ''}</b></div>
       ${spark(weekly(l.calls, 13).map((x) => x.v), 'var(--sky)')}
       ${l.moved && l.moved >= D.days[rg.i0] ? '<p class="note">Address changed this period. Google re-checks moved listings, so a short dip is expected.</p>' : ''}</div>`;
@@ -554,7 +623,7 @@ function google(rg) {
   const grp = [['Page one', (p) => p <= 10], ['Page two', (p) => p > 10 && p <= 20], ['Further back', (p) => p > 20]];
   const rl = grp.map(([g, f]) => { const xs = shown.filter((x) => f(x.pos)).sort((a, b) => a.pos - b.pos); return xs.length ? `<div class="grp">${g}</div>` + xs.map((x) => `<div class="rank"><span class="p">${Math.round(x.pos)}</span><span class="q" title="${esc(x.query)}">${esc(x.query)}</span><span class="c">${x.change == null ? '' : x.change >= 1 ? `<span class="pill up">▲ ${Math.round(x.change)}</span>` : x.change <= -1 ? `<span class="pill down">▼ ${Math.round(-x.change)}</span>` : '<span class="pill n">steady</span>'}</span>${spark(x.series, 'var(--steel)', true)}</div>`).join('') : ''; }).join('');
   return `<h2 class="head">${esc(head)}</h2>
-  <ul class="brief"><li>Each listing is counted on its own. Google reports these with a delay of about ${D.meta.gbpLag} days, so the most recent days fill in later.</li></ul>
+  <ul class="brief"><li>${(() => { const rv = L.reduce((a, l) => a + S(l.reviews, rg), 0); return jobsR ? `${fmtN(rv)} new reviews on ${fmtN(jobsR)} completed jobs, about ${(rv / jobsR * 100).toFixed(1)} per 100 jobs. Strong shops ask every customer and land 15 to 25.` : ''; })()}</li><li>Each listing is counted on its own. Google reports these with a delay of about ${D.meta.gbpLag} days, so the most recent days fill in later.</li></ul>
   <div class="lst">${cards}</div>
   <div class="grid" style="margin-top:18px">
     <div class="panel s12"><h3>Website search rankings</h3><p class="sub">Average position on Google for the most-searched non-brand terms. Change is over the last 4 weeks. These are website results, not the map listings.</p>
@@ -567,6 +636,7 @@ function cust(rg) {
   const s = D.snapshot, c = s.customers, pt = s.pullThrough;
   const nc = S(D.daily.newCustomers, rg), ncP = S(D.daily.newCustomers, rg, true);
   const mo = monthly(D.daily.newCustomers);
+  const ltv = Object.entries(D.lists.credited.reduce((a, x) => { (a[x.src] ||= []).push(x); return a; }, {})).map(([ch, xs]) => ({ ch, n: xs.length, avg: xs.reduce((a, x) => a + x.rev, 0) / xs.length, rep: xs.filter((x) => x.jobs > 1).length / xs.length, top: Math.max(...xs.map((x) => x.rev)) })).sort((a, b) => b.avg - a.avg);
   const head = c.withJob ? `${pct(c.repeat / c.withJob)} of customers have come back for more work.` : 'Customer history builds as jobs complete.';
   return `<h2 class="head">${esc(head)}</h2>
   <ul class="brief">
@@ -583,9 +653,15 @@ function cust(rg) {
   <div class="grid">
     <div class="panel s8"><h3>New customers by month</h3><p class="sub">First completed job in Housecall Pro. The current month is to date.</p>
       ${bars(mo.map((x, i) => ({ label: mTick(x.m, i), parts: [{ v: x.v, c: 'var(--c3)' }], faded: i === mo.length - 1 })), { aria: 'New customers by month' })}</div>
+    <div class="panel s8"><h3>Customer value by how they found you</h3><p class="sub">New customers since ${fmtDate(D.marketingStart)}, everything they have paid to date</p>
+      <div class="tbl"><table><thead><tr><th>Source</th><th>Customers</th><th>Avg paid</th><th>Came back</th><th>Top customer</th></tr></thead><tbody>
+      ${ltv.map((x) => `<tr class="open" data-open="credited|${esc(x.ch)}" tabindex="0"><td>${esc(x.ch)}</td><td>${fmtN(x.n)}</td><td>${fmt$(x.avg)}</td><td>${pct(x.rep)}</td><td>${fmt$(x.top)}</td></tr>`).join('')}
+      </tbody></table></div>
+      <p class="note">The list covers all ranges, since value builds over time. Click a source to see each customer.</p></div>
     <div class="panel s4"><h3>Past customers by last visit</h3><p class="sub">Right now</p>
       <ul class="todo">
-        <li class="open" data-open="winback" tabindex="0" role="button"><b class="hot">${fmtN(c.winback12)}</b><span>Last job 12–24 months ago<small>Most likely to rebook a tune-up.</small></span><em class="go">View ›</em></li>
+        <li class="open" data-open="tuneDue" tabindex="0" role="button"><b class="hot">${fmtN(D.lists.tuneDue.length)}</b><span>Due for a tune-up now<small>Last tune-up 10–14 months ago.</small></span><em class="go">View ›</em></li>
+        <li class="open" data-open="winback" tabindex="0" role="button"><b>${fmtN(c.winback12)}</b><span>Last job 12–24 months ago<small>Most likely to rebook a tune-up.</small></span><em class="go">View ›</em></li>
         <li class="open" data-open="winback" tabindex="0" role="button"><b>${fmtN(c.winback24)}</b><span>Last job over 24 months ago<small>Equipment may be near replacement age.</small></span><em class="go">View ›</em></li>
       </ul></div>
   </div>`;
@@ -629,6 +705,21 @@ const LISTS = {
     const items = D.lists.missed.filter((x) => x.t >= cut);
     return { title: arg === '7' ? 'Missed calls, last 7 days' : `Missed calls, last ${D.meta.messageWindow} days`, sub: 'Calls to the Google Ads, Meta and LSA lines that were missed or went to voicemail.', items,
       row: (x) => `<div class="di"><div class="nm">${esc(x.n)}</div><div class="vl"><span class="tag warn">${x.k === 'voicemail' ? 'Voicemail' : 'Missed'}</span></div><div class="mt">${new Date(x.t).toLocaleString('en-US', { timeZone: D.meta.tz, weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}.</div>${links(null, x.u, 'GHL contact')}</div>` };
+  },
+  cold() {
+    const items = coldLeads();
+    return { title: 'Leads going cold', sub: 'Came in during the last 14 days with no job booked in Housecall Pro yet. Newest first.', items,
+      row: (x) => `<div class="di"><div class="nm">${esc(x.n)}<span class="tag">${esc(x.ch)}</span></div><div class="vl"><span class="tag warn">${Math.round((new Date(D.meta.today) - new Date(x.d)) / 864e5)} days</span></div><div class="mt">Came in ${fmtDate(x.d)}. GHL source: ${esc(x.raw)}.</div>${links(null, x.g, 'GHL contact')}</div>` };
+  },
+  tuneDue() {
+    const items = D.lists.tuneDue;
+    return { title: 'Due for a tune-up', sub: 'Last tune-up 10 to 14 months ago and none since. Oldest first.', items, total: items.reduce((a, x) => a + x.ltv, 0), unit: 'lifetime spend',
+      row: (x) => `<div class="di"><div class="nm">${esc(x.n)}</div><div class="vl">${fmt$(x.ltv)}</div><div class="mt">Last tune-up ${fmtDate(x.last)} ${x.last.slice(0, 4)}, ${x.jobs} ${x.jobs === 1 ? 'job' : 'jobs'} in total.</div>${links(x.h, null)}</div>` };
+  },
+  campaign(arg) {
+    const c = D.campaigns[+arg || 0]; const items = c.list;
+    return { title: c.name, sub: `Opportunities in the campaign pipeline. Booked and paid count Housecall Pro jobs within 90 days of each opportunity.`, items, total: c.revenue, unit: 'paid', count2: ['booked', c.booked],
+      row: (x) => `<div class="di"><div class="nm">${esc(x.n)}<span class="tag">${esc(x.st)}</span></div><div class="vl">${x.rv ? fmt$(x.rv) : `<span class="tag ${x.b ? 'ok' : ''}">${x.b ? 'Booked' : 'Not booked'}</span>`}</div><div class="mt">Added ${fmtDate(x.d)}.</div>${links(x.h, x.g, 'GHL contact')}</div>` };
   },
   winback() {
     const items = D.lists.winback;
