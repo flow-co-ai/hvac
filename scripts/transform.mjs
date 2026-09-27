@@ -116,9 +116,12 @@ export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
     if (cust && cust.created.some((d) => d > created)) continue;
     const v = Math.max(0, ...opts.map((o) => amount(o.total_amount)));
     estOpen++; estValue += v; if (daysBetween(created, today) > 30) estAged++;
-    estList.push({ n: cust?.name || hcpName(e.customer), d: created, v: Math.round(v), u: hcpLink('estimate', e.id) });
+    // the web app addresses estimates by a "best_" id; the API id can differ, so fall back to the customer profile
+    const webId = [e.id, e.estimate_id, ...opts.map((o) => o.id)].find((x) => /^best_/.test(String(x || '')));
+    estList.push({ n: cust?.name || hcpName(e.customer), d: created, v: Math.round(v), u: webId ? hcpLink('estimate', webId) : null, h: cid ? hcpLink('customer', cid) : null });
   }
   estList.sort((a, b) => b.v - a.v);
+  { const ex = (hcp.estimates || [])[0]; if (ex) notes.push(`Estimate id format: ${String(ex.id || '').split('_')[0]}_…, option ids ${[...new Set((ex.options || []).map((o) => String(o.id || '').split('_')[0]))].join('/') || 'none'}_…`); }
   const unsched = (hcp.jobs || []).filter((j) => /needs scheduling|unscheduled/.test(status(j)) && daysBetween(localDay(j.created_at) || today, today) <= 120)
     .map((j) => ({ n: hcpName(j.customer), d: localDay(j.created_at), t: jobType(j), u: hcpLink('job', j.id) })).sort((a, b) => (a.d < b.d ? 1 : -1));
 
