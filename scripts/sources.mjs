@@ -181,8 +181,17 @@ export async function pullWindsor(from, to) {
     reviews[l.id] = await safe(`Reviews ${l.name}`, () => windsor('google_my_business', l.id, ['account_id', 'review_id', 'review_create_time', 'review_star_rating'], from, to));
     totals[l.id] = (await safe(`Review totals ${l.name}`, () => windsor('google_my_business', l.id, ['account_id', 'review_total_count', 'review_average_rating_total'], addDays(to, -7), to)))[0] || null;
   }
-  const sc = await safe('Search Console', () => windsor('searchconsole', w.search_console, ['date', 'query', 'clicks', 'impressions', 'position'], addDays(to, -120), to));
-  return { gads, meta, metaTotal, gbp, reviews, totals, sc };
+  const sites = {};
+  for (const st of w.sites || [{ id: w.search_console, name: w.search_console }]) {
+    if (st.pending) continue;
+    sites[st.id] = {
+      totals: await safe(`Search Console ${st.name}`, () => windsor('searchconsole', st.id, ['date', 'clicks', 'impressions', 'position'], from, to)),
+      queries: await safe(`Search Console queries ${st.name}`, () => windsor('searchconsole', st.id, ['date', 'query', 'clicks', 'impressions', 'position'], addDays(to, -120), to)),
+      pages: await safe(`Search Console pages ${st.name}`, () => windsor('searchconsole', st.id, ['page', 'clicks', 'impressions', 'position'], addDays(to, -90), to)),
+    };
+  }
+  const sc = sites[(w.sites || [])[0]?.id]?.queries || [];
+  return { gads, meta, metaTotal, gbp, reviews, totals, sc, sites };
 }
 export async function checkWindsor() {
   const d = new Date().toISOString().slice(0, 10);

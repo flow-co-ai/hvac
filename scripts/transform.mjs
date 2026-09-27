@@ -40,6 +40,7 @@ const nameKey = (f, l) => { const k = `${f || ''} ${l || ''}`.toLowerCase().repl
 const hcpName = (c = {}) => [c.first_name, c.last_name].filter(Boolean).join(' ') || c.company || 'Customer';
 const ghlName = (c = {}) => c.contactName || [c.firstName, c.lastName].filter(Boolean).join(' ') || c.companyName || 'Contact';
 const HCP = 'https://pro.housecallpro.com/app';
+export const HCP_BASE = HCP;
 
 export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
   const tz = config.timezone;
@@ -146,7 +147,7 @@ export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
     if (ch === 'Text campaign') continue; // replies from past-customer texting are not new demand
     put(leadsDaily[ch], leadDay); leadDayByContact.set(c.id, leadDay);
     if (daysBetween(leadDay, today) <= 90) { const [wd, hr] = localWeekdayHour(c.dateAdded || c.dateCreated); leadHeat[wd][hr]++; }
-    if (daysBetween(leadDay, today) <= 400) leadList.push({ n: ghlName(c), d: leadDay, ch, raw: rawSource(c).slice(0, 40), g: gLink(c.id), b: !!(cust && cust.created.some((d) => d >= leadDay)) });
+    if (daysBetween(leadDay, today) <= 400) leadList.push({ n: ghlName(c), d: leadDay, ch, raw: rawSource(c).slice(0, 40), g: gLink(c.id), h: cust ? `${HCP}/customers/${cust.id}` : null, b: !!(cust && cust.created.some((d) => d >= leadDay)) });
     cell(month(leadDay), ch).leads++;
   }
 
@@ -332,6 +333,39 @@ export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
   }).filter((x) => x.pos != null);
 
 
+  // ======================= website (Search Console, per site) =======================
+  const townRe = rx(config.windsor.towns || '$^'), topics = (config.windsor.topics || []).map(([n, m]) => [n, rx(m)]);
+  const sites = (config.windsor.sites || []).map((st) => {
+    const src = win.sites?.[st.id];
+    if (!src) return { name: st.name, pending: !!st.pending };
+    const clicks = zeros(), impr = zeros(), posW = zeros();
+    for (const x of src.totals || []) { put(clicks, x.date, num(x.clicks)); put(impr, x.date, num(x.impressions)); put(posW, x.date, num(x.position) * num(x.impressions)); }
+    // last 28 days vs the 28 before, by topic and by town (non-brand, service-area queries only)
+    const cut1 = addDays(today, -28), cut0 = addDays(today, -56);
+    const agg = () => ({ i: 0, c: 0, pw: 0, pi: 0, ppw: 0, ppi: 0 });
+    const byTopic = {}, byTown = {}, qAgg = new Map(); let brandC = 0, brandI = 0, nbC = 0, nbI = 0;
+    for (const x of src.queries || []) {
+      const q = String(x.query || '').toLowerCase(); if (!q || !x.date || x.date < cut0) continue;
+      if (rankEx.test(q)) continue;
+      const i = num(x.impressions), c = num(x.clicks), p = num(x.position), cur = x.date >= cut1;
+      if (brand.test(q)) { if (cur) { brandC += c; brandI += i; } continue; }
+      if (cur) { nbC += c; nbI += i; }
+      const add = (o) => { if (cur) { o.i += i; o.c += c; o.pw += p * i; o.pi += i; } else { o.ppw += p * i; o.ppi += i; } };
+      const tp = (topics.find(([, re]) => re.test(q)) || ['Other'])[0]; add(byTopic[tp] ||= agg());
+      const tm = q.match(townRe); if (tm) add(byTown[tm[0].replace(/\b\w/g, (m) => m.toUpperCase())] ||= agg());
+      if (cur) { const o = qAgg.get(q) || { q, i: 0, c: 0, pw: 0 }; o.i += i; o.c += c; o.pw += p * i; qAgg.set(q, o); }
+    }
+    const fin = (o) => ({ impr: o.i, clicks: o.c, pos: o.pi ? +(o.pw / o.pi).toFixed(1) : null, prev: o.ppi ? +(o.ppw / o.ppi).toFixed(1) : null });
+    const striking = [...qAgg.values()].map((o) => ({ q: o.q, impr: o.i, clicks: o.c, pos: o.i ? +(o.pw / o.i).toFixed(1) : null })).filter((o) => o.pos >= 8 && o.pos <= 20 && o.impr >= 5).sort((a, b) => b.impr - a.impr).slice(0, 15);
+    const pages = (src.pages || []).map((x) => ({ u: String(x.page || '').replace(/^https?:\/\/[^/]+/, '') || '/', clicks: num(x.clicks), impr: num(x.impressions), pos: +num(x.position).toFixed(1) })).filter((x) => !rankEx.test(x.u)).sort((a, b) => b.clicks - a.clicks || b.impr - a.impr).slice(0, 15);
+    const rr = (a) => a.map((v) => Math.round(v));
+    return { name: st.name, clicks: rr(clicks), impr: rr(impr), posW: rr(posW),
+      topics: Object.entries(byTopic).map(([n, o]) => ({ n, ...fin(o) })).sort((a, b) => b.impr - a.impr),
+      towns: Object.entries(byTown).map(([n, o]) => ({ n, ...fin(o) })).sort((a, b) => b.impr - a.impr).slice(0, 15),
+      brand: { clicks: brandC, impr: brandI }, nonBrand: { clicks: nbC, impr: nbI }, striking, pages,
+      rankings: st.id === (config.windsor.sites || [])[0]?.id ? rankings : [] };
+  });
+
   // ======================= insights =======================
   // technicians: credit the first assigned employee on each completed job
   const techName = (j) => { const e = (j.assigned_employees || j.employees || [])[0]; return e ? [e.first_name, e.last_name].filter(Boolean).join(' ') || e.name || 'Unassigned' : 'Unassigned'; };
@@ -366,9 +400,9 @@ export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
   for (const pl of ghl.pipelines || []) { pipeName.set(pl.id, pl.name); for (const st of pl.stages || []) stageName.set(st.id, st.name); }
   const contactById = new Map((ghl.contacts || []).map((c) => [c.id, c]));
   const campaigns = (config.campaigns || []).map((cp) => {
-    const re = rx(cp.pipeline), win = cp.window_days || 90;
+    const re = rx(cp.pipeline), win = cp.window_days || 60, offer = rx(cp.offer || 'tune');
     const opps = (ghl.opportunities || []).filter((o) => re.test(pipeName.get(o.pipelineId) || o.pipeline?.name || ''));
-    const stages = {}; const list = []; let booked = 0, done = 0, revenue = 0, followOn = 0, starts = [];
+    const stages = {}; const list = []; let booked = 0, done = 0, revenue = 0, followOn = 0, otherWork = 0; const starts = [];
     for (const o of opps) {
       const d = localDay(o.createdAt || o.dateAdded); if (!d) continue; starts.push(d);
       const st = stageName.get(o.pipelineStageId) || o.status || 'Open'; stages[st] = (stages[st] || 0) + 1;
@@ -376,14 +410,20 @@ export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
       const cid = phoneIdx.get(phone10(ct.phone)) || emailIdx.get(email(ct.email));
       const cust = cid && byCust.get(cid);
       const inWin = (x) => x >= d && daysBetween(d, x) <= win;
-      const b = !!(cust && cust.created.some(inWin));
-      const after = cust ? cust.done.filter((x) => inWin(x.day)) : [];
-      const rv = after.reduce((x, y) => x + y.amt, 0), fo = after.filter((x) => x.type === 'Repair' || x.type === 'Replacement').reduce((x, y) => x + y.amt, 0);
-      if (b) booked++; if (after.length) done++; revenue += rv; followOn += fo;
-      list.push({ n: ghlName(ct) !== 'Contact' ? ghlName(ct) : (o.name || 'Contact'), d, st, b, rv: Math.round(rv), g: gLink(o.contactId), h: cust ? `${HCP}/customers/${cust.id}` : null });
+      // the campaign's own result: a tune-up booked or done after the customer was texted
+      const tuJobs = cust ? cust.jobs.filter((j) => inWin(localDay(j.created_at) || '') && jobType(j) === 'Tune-up') : [];
+      const tuDone = cust ? cust.done.filter((x) => x.type === 'Tune-up' && inWin(x.day)) : [];
+      const firstTu = tuDone[0]?.day || null;
+      // follow-on: repair or replacement completed after that campaign tune-up
+      const fo = firstTu ? cust.done.filter((x) => (x.type === 'Repair' || x.type === 'Replacement') && x.day >= firstTu && daysBetween(firstTu, x.day) <= win) : [];
+      // other work in the window that did not come through a campaign tune-up (not credited)
+      const other = cust && !firstTu ? cust.done.filter((x) => inWin(x.day) && x.type !== 'Tune-up').reduce((a, x) => a + x.amt, 0) : 0;
+      const rv = tuDone.reduce((a, x) => a + x.amt, 0), fov = fo.reduce((a, x) => a + x.amt, 0);
+      if (tuJobs.length || tuDone.length) booked++; if (tuDone.length) done++; revenue += rv; followOn += fov; otherWork += other;
+      list.push({ n: ghlName(ct) !== 'Contact' ? ghlName(ct) : (o.name || 'Contact'), d, st, b: !!(tuJobs.length || tuDone.length), rv: Math.round(rv + fov), g: gLink(o.contactId), h: cust ? `${HCP}/customers/${cust.id}` : null });
     }
-    list.sort((a, b) => b.rv - a.rv || (a.d < b.d ? 1 : -1));
-    return { name: cp.name, start: starts.sort()[0] || null, opps: list.length, stages: Object.entries(stages).sort((a, b) => b[1] - a[1]), booked, done, revenue: Math.round(revenue), followOn: Math.round(followOn), list: list.slice(0, 600) };
+    list.sort((a, b) => b.rv - a.rv || (b.b - a.b) || (a.d < b.d ? 1 : -1));
+    return { name: cp.name, start: starts.sort()[0] || null, opps: list.length, stages: Object.entries(stages).sort((a, b) => b[1] - a[1]), booked, done, revenue: Math.round(revenue), followOn: Math.round(followOn), otherWork: Math.round(otherWork), window: win, list: list.slice(0, 1200) };
   });
   if ((config.campaigns || []).length && !campaigns.some((c) => c.opps)) notes.push(`Campaigns: no GHL pipeline matched "${config.campaigns.map((c) => c.pipeline).join(', ')}". Pipelines found: ${[...pipeName.values()].join(', ') || 'none'}.`);
 
@@ -408,7 +448,7 @@ export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
       pullThrough: { tuneups: tune, converted: tuneConv, revenue: Math.round(tuneConvRev) },
       response: r, heat, heatAll, beforeAfter: ba, existingInCrm, syncExcluded,
     },
-    techs, estStats, campaigns, leadHeat, answering: config.answering_hours || [8, 20],
+    techs, estStats, campaigns, sites, leadHeat, answering: config.answering_hours || [8, 20],
     lists: {
       credited: credited.slice(0, 2500), leads: leadList.sort((a, b) => (a.d < b.d ? 1 : -1)).slice(0, 3000), waiting: waitList.slice(0, 300),
       estimates: estList.slice(0, 300), unscheduled: unsched.slice(0, 300), missed: missList.sort((a, b) => (a.t < b.t ? 1 : -1)).slice(0, 400),
