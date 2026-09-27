@@ -713,12 +713,12 @@ const LISTS = {
   estimates() {
     const items = D.lists.estimates;
     return { title: 'Estimates not yet approved', sub: 'Sent in the last 90 days, with no option approved or declined and no job booked since.', items, total: items.reduce((a, x) => a + x.v, 0), unit: 'in value',
-      row: (x) => `<div class="di"><div class="nm">${esc(x.n)}</div><div class="vl">${fmt$(x.v)}</div><div class="mt">Sent ${fmtDate(x.d)}, ${Math.round((new Date(D.meta.today) - new Date(x.d)) / 864e5)} days ago.</div>${links(x.u, null)}</div>` };
+      row: (x) => `<div class="di"><div class="nm">${esc(x.n)}</div><div class="vl">${fmt$(x.v)}</div><div class="mt">Sent ${fmtDate(x.d)}, ${Math.round((new Date(D.meta.today) - new Date(x.d)) / 864e5)} days ago.</div>${x.u ? links(x.u, null).replace('Open in Housecall Pro', 'Open estimate in Housecall Pro') : links(x.h, null).replace('Open in Housecall Pro', 'Open customer in Housecall Pro')}</div>` };
   },
   unscheduled() {
     const items = D.lists.unscheduled;
     return { title: 'Jobs that need scheduling', sub: 'Created in the last 120 days and still unscheduled in Housecall Pro.', items,
-      row: (x) => `<div class="di"><div class="nm">${esc(x.n)}</div><div class="vl"><span class="tag">${esc(x.t)}</span></div><div class="mt">Created ${fmtDate(x.d)}.</div>${links(x.u, null)}</div>` };
+      row: (x) => `<div class="di"><div class="nm">${esc(x.n)}</div><div class="vl"><span class="tag">${esc(x.t)}</span></div><div class="mt">Created ${fmtDate(x.d)}.</div>${links(x.u, null).replace('Open in Housecall Pro', 'Open job in Housecall Pro')}</div>` };
   },
   missed(arg) {
     const cut = arg === '7' ? new Date(Date.now() - 7 * 864e5).toISOString() : '';
