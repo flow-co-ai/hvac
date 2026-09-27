@@ -11,13 +11,18 @@ const med = (a) => { if (!a.length) return null; const s = [...a].sort((x, y) =>
 // ---------- helpers ----------
 function rawSource(c) {
   const a = c.attributionSource || {};
-  return (c._oppSources || [])[0] || c.source || a.utmSource || a.medium || a.sessionSource || (c.tags || []).slice(0, 3).join(', ') || '(blank)';
+  return c.source || (c._oppSources || [])[0] || a.utmSource || a.medium || a.sessionSource || (c.tags || []).slice(0, 3).join(', ') || '(blank)';
 }
+// Channel comes from where the contact originated: its own source field first, then the
+// pipeline opportunity and ad-click attribution. Tags and custom fields are only a fallback,
+// and a tag can never mark a contact as a sync record (the HCP sync tags real leads after they book).
 function contactChannel(c) {
   const a = c.attributionSource || {}; const b = c.lastAttributionSource || {};
+  const primary = [c.source, ...(c._oppSources || []), a.medium, a.utmSource, a.utmMedium, a.sessionSource, a.campaign, a.utmCampaign, a.gclid ? 'gclid' : '', a.fbclid ? 'facebook' : '', b.medium, b.utmSource, b.sessionSource].filter(Boolean);
+  for (const v of primary) { const t = String(v).toLowerCase(); for (const ch of CH) if (ch.re.test(t)) return ch.name; }
   const cf = (c.customFields || c.customField || []).map((f) => f.value ?? f.field_value).filter((v) => typeof v === 'string' && v.length <= 40);
-  const hay = [...(c._oppSources || []), c.source, ...cf, ...(c.tags || []), a.medium, a.utmSource, a.utmMedium, a.sessionSource, a.campaign, a.utmCampaign, a.referrer, a.gclid ? 'gclid' : '', a.fbclid ? 'facebook' : '', b.medium, b.utmSource, b.sessionSource].filter(Boolean).join(' | ').toLowerCase();
-  for (const ch of CH) if (ch.re.test(hay)) return ch.name;
+  const hay = [...(c.tags || []), ...cf].join(' | ').toLowerCase();
+  for (const ch of CH) if (!ch.exclude && ch.re.test(hay)) return ch.name;
   return 'Source not captured';
 }
 const jobText = (j) => [j.job_fields?.job_type?.name, j.description, j.name, ...(j.tags || []), ...(j.line_items || []).map((l) => l.name)].filter(Boolean).join(' ');
@@ -152,7 +157,7 @@ export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
   const add = (m, k, c) => { if (!k) return; (m.get(k) || m.set(k, []).get(k)).push(c); };
   const rawCount = new Map();
   for (const c of ghl.contacts || []) {
-    const ch = contactChannel(c); if (CH.find((x) => x.name === ch)?.exclude) continue;
+    const ch = contactChannel(c);
     const d = localDay(c.dateAdded || c.dateCreated); if (!d) continue;
     const raw = rawSource(c).slice(0, 40); rawCount.set(raw, (rawCount.get(raw) || 0) + 1);
     const o = { d, ch, raw, id: c.id, n: ghlName(c) };
@@ -168,6 +173,7 @@ export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
   const custCohorts = {}; // first-job month -> source -> {customers, jobs, revenue}
   const how = { phone: 0, email: 0, name: 0, hcp_field: 0, not_captured: 0, existing: 0 };
   const match = { phone: 0, email: 0, name: 0, none: 0, withGhlSource: 0 };
+  const diag = { overlap: 0, lateOnly: 0 };
   const credited = [];
   const start = config.marketing_start || from;
   for (const c of byCust.values()) {
@@ -182,13 +188,15 @@ export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
       for (const o of gByEmail.get(c.keys.em) || []) if (ok(o)) cands.push([o, 'email']);
       if (c.keys.nm && hcpNameCount.get(c.keys.nm) === 1) { const g = (gByName.get(c.keys.nm) || []).filter(ok); if (g.length && new Set(g.map((o) => o.id)).size === 1) cands.push([g[0], 'name']); }
       // prefer a contact with a real source, then the earliest
-      cands.sort((a, b) => ((a[0].ch === 'Source not captured') - (b[0].ch === 'Source not captured')) || (a[0].d < b[0].d ? -1 : 1));
-      if (cands.length) { [hit, via] = cands[0]; if (hit.ch !== 'Source not captured' && hit.ch !== 'Text campaign') src = hit.ch; }
+      const credits = (o) => o.ch !== 'Source not captured' && o.ch !== 'Text campaign' && !CH.find((x) => x.name === o.ch)?.exclude;
+      cands.sort((a, b) => (credits(b[0]) - credits(a[0])) || (a[0].d < b[0].d ? -1 : 1));
+      if (cands.length) { [hit, via] = cands[0]; if (credits(hit)) src = hit.ch; }
       if (!src) { const f = hcpChannel(c.leadSource || c.jobs.map((j) => j.lead_source || j.customer?.lead_source).find(Boolean)); if (f && f !== 'Text campaign') { src = f; via = 'hcp_field'; } }
       if (!src) { src = 'Source not captured'; via = hit ? via : 'not_captured'; }
     }
     how[src === 'Source not captured' ? 'not_captured' : via]++;
-    if (src !== 'Existing customers') { match[cands.length ? cands[0][1] : 'none']++; if (hit && hit.ch !== 'Source not captured') match.withGhlSource++; }
+    if (src !== 'Existing customers') { const any = c.keys.ph.some((p) => gByPhone.has(p)) || (c.keys.em && gByEmail.has(c.keys.em)); if (any) diag.overlap++; if (any && !cands.length) diag.lateOnly++; }
+    if (src !== 'Existing customers') { match[cands.length ? cands[0][1] : 'none']++; if (hit && src === hit.ch && via !== 'hcp_field' && src !== 'Source not captured') match.withGhlSource++; }
     put(newBy[src], c.done[0].day);
     const k = ((custCohorts[month(c.done[0].day)] ||= {})[src] ||= { customers: 0, jobs: 0, revenue: 0 });
     k.customers++;
@@ -199,6 +207,7 @@ export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
   credited.sort((a, b) => (a.first < b.first ? 1 : -1));
   const hcpWith = { phone: 0, email: 0, name: 0 }; for (const c of byCust.values()) { if (c.keys.ph.length) hcpWith.phone++; if (c.keys.em) hcpWith.email++; if (c.keys.nm) hcpWith.name++; }
   const ghlWith = { phone: 0, email: 0 }; for (const c of ghl.contacts || []) { if (phone10(c.phone)) ghlWith.phone++; if (email(c.email)) ghlWith.email++; }
+  notes.push(`Phone or email shared with a GHL contact: ${diag.overlap} new customers; ${diag.lateOnly} of them only have GHL contacts created after their first job (not credited).`);
   notes.push(`Matching: ${match.phone + match.email + match.name} of ${match.phone + match.email + match.name + match.none} new customers found in GHL (phone ${match.phone}, email ${match.email}, name ${match.name}); ${match.withGhlSource} of those had a source in GHL. HCP customers with phone ${hcpWith.phone}, email ${hcpWith.email}, of ${byCust.size}. GHL contacts with phone ${ghlWith.phone}, email ${ghlWith.email}, of ${(ghl.contacts || []).length}.`);
   notes.push(`Attribution (HCP customers since ${start}): matched to GHL by phone ${how.phone}, email ${how.email}, name ${how.name}; from the HCP lead source ${how.hcp_field}; no source ${how.not_captured}; existing customers ${how.existing}.`);
   // sanity: credited customers should not exceed that channel's GHL leads over the same year
