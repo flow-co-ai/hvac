@@ -41,6 +41,8 @@ const hcpName = (c = {}) => [c.first_name, c.last_name].filter(Boolean).join(' '
 const ghlName = (c = {}) => c.contactName || [c.firstName, c.lastName].filter(Boolean).join(' ') || c.companyName || 'Contact';
 const HCP = 'https://pro.housecallpro.com/app';
 export const HCP_BASE = HCP;
+// link templates come from config so they can match the account's real web addresses
+const hcpLink = (kind, id) => { const tpl = config.hcp.links?.[kind]; return tpl && id ? tpl.replace('{id}', encodeURIComponent(id)) : null; };
 
 export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
   const tz = config.timezone;
@@ -88,7 +90,7 @@ export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
     const last = c.done[c.done.length - 1].day;
     const age = daysBetween(last, today);
     if (age >= 365 && age < 730) wb12++; else if (age >= 730) wb24++;
-    if (age >= 365) winList.push({ n: c.name, last: last, ltv: Math.round(c.done.reduce((x, d) => x + d.amt, 0)), jobs: c.done.length, h: `${HCP}/customers/${c.id}` });
+    if (age >= 365) winList.push({ n: c.name, last: last, ltv: Math.round(c.done.reduce((x, d) => x + d.amt, 0)), jobs: c.done.length, h: hcpLink('customer', c.id) });
     for (const t of c.done.filter((d) => d.type === 'Tune-up' && daysBetween(d.day, today) >= 30)) {
       tune++;
       const hit = c.done.find((d) => (d.type === 'Repair' || d.type === 'Replacement') && d.day > t.day && daysBetween(t.day, d.day) <= 120);
@@ -114,11 +116,11 @@ export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
     if (cust && cust.created.some((d) => d > created)) continue;
     const v = Math.max(0, ...opts.map((o) => amount(o.total_amount)));
     estOpen++; estValue += v; if (daysBetween(created, today) > 30) estAged++;
-    estList.push({ n: cust?.name || hcpName(e.customer), d: created, v: Math.round(v), u: `${HCP}/estimates/${e.id}` });
+    estList.push({ n: cust?.name || hcpName(e.customer), d: created, v: Math.round(v), u: hcpLink('estimate', e.id) });
   }
   estList.sort((a, b) => b.v - a.v);
   const unsched = (hcp.jobs || []).filter((j) => /needs scheduling|unscheduled/.test(status(j)) && daysBetween(localDay(j.created_at) || today, today) <= 120)
-    .map((j) => ({ n: hcpName(j.customer), d: localDay(j.created_at), t: jobType(j), u: `${HCP}/jobs/${j.id}` })).sort((a, b) => (a.d < b.d ? 1 : -1));
+    .map((j) => ({ n: hcpName(j.customer), d: localDay(j.created_at), t: jobType(j), u: hcpLink('job', j.id) })).sort((a, b) => (a.d < b.d ? 1 : -1));
 
   // ======================= GHL: leads & attribution =======================
   const phoneIdx = new Map(), emailIdx = new Map();
@@ -147,7 +149,7 @@ export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
     if (ch === 'Text campaign') continue; // replies from past-customer texting are not new demand
     put(leadsDaily[ch], leadDay); leadDayByContact.set(c.id, leadDay);
     if (daysBetween(leadDay, today) <= 90) { const [wd, hr] = localWeekdayHour(c.dateAdded || c.dateCreated); leadHeat[wd][hr]++; }
-    if (daysBetween(leadDay, today) <= 400) leadList.push({ n: ghlName(c), d: leadDay, ch, raw: rawSource(c).slice(0, 40), g: gLink(c.id), h: cust ? `${HCP}/customers/${cust.id}` : null, b: !!(cust && cust.created.some((d) => d >= leadDay)) });
+    if (daysBetween(leadDay, today) <= 400) leadList.push({ n: ghlName(c), d: leadDay, ch, raw: rawSource(c).slice(0, 40), g: gLink(c.id), h: cust ? hcpLink('customer', cust.id) : null, b: !!(cust && cust.created.some((d) => d >= leadDay)) });
     cell(month(leadDay), ch).leads++;
   }
 
@@ -205,7 +207,7 @@ export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
     k.customers++;
     let total = 0;
     for (const d of c.done) { put(revBy[src], d.day, d.amt); k.jobs++; k.revenue += d.amt; total += d.amt; }
-    if (src !== 'Existing customers') credited.push({ n: c.name, src, via, raw: hit?.raw || null, lead: hit?.d || null, first: c.done[0].day, jobs: c.done.length, rev: Math.round(total), h: `${HCP}/customers/${c.id}`, g: hit ? gLink(hit.id) : null });
+    if (src !== 'Existing customers') credited.push({ n: c.name, src, via, raw: hit?.raw || null, lead: hit?.d || null, first: c.done[0].day, jobs: c.done.length, rev: Math.round(total), h: hcpLink('customer', c.id), g: hit ? gLink(hit.id) : null });
   }
   credited.sort((a, b) => (a.first < b.first ? 1 : -1));
   const hcpWith = { phone: 0, email: 0, name: 0 }; for (const c of byCust.values()) { if (c.keys.ph.length) hcpWith.phone++; if (c.keys.em) hcpWith.email++; if (c.keys.nm) hcpWith.name++; }
@@ -287,7 +289,7 @@ export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
     else if (inb.length) k = answered ? OUT[2] : human ? OUT[3] : OUT[4];
     else k = human ? OUT[5] : OUT[6];
     (outcome[ch] ||= Object.fromEntries(OUT.map((o) => [o, 0])))[k]++;
-    outList.push({ n: ghlName(c), ch, d: ld, k, g: gLink(c.id), h: cust ? `${HCP}/customers/${cust.id}` : null });
+    outList.push({ n: ghlName(c), ch, d: ld, k, g: gLink(c.id), h: cust ? hcpLink('customer', cust.id) : null });
   }
   const leadOutcomes = { cats: OUT, since, byCh: outcome };
   { const tot = Object.fromEntries(OUT.map((o) => [o, 0])); for (const v of Object.values(outcome)) for (const o of OUT) tot[o] += v[o];
@@ -420,7 +422,7 @@ export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
   for (const c of byCust.values()) {
     const tu = c.done.filter((d) => d.type === 'Tune-up'); if (!tu.length) continue;
     const last = tu[tu.length - 1].day, age = daysBetween(last, today);
-    if (age >= 300 && age <= 430) tuneDue.push({ n: c.name, last, jobs: c.done.length, ltv: Math.round(c.done.reduce((x, d) => x + d.amt, 0)), h: `${HCP}/customers/${c.id}` });
+    if (age >= 300 && age <= 430) tuneDue.push({ n: c.name, last, jobs: c.done.length, ltv: Math.round(c.done.reduce((x, d) => x + d.amt, 0)), h: hcpLink('customer', c.id) });
   }
   tuneDue.sort((a, b) => (a.last < b.last ? -1 : 1));
   // campaigns: a GHL pipeline, matched to HCP jobs booked after each opportunity was created
@@ -448,7 +450,7 @@ export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
       const other = cust && !firstTu ? cust.done.filter((x) => inWin(x.day) && x.type !== 'Tune-up').reduce((a, x) => a + x.amt, 0) : 0;
       const rv = tuDone.reduce((a, x) => a + x.amt, 0), fov = fo.reduce((a, x) => a + x.amt, 0);
       if (tuJobs.length || tuDone.length) booked++; if (tuDone.length) done++; revenue += rv; followOn += fov; otherWork += other;
-      list.push({ n: ghlName(ct) !== 'Contact' ? ghlName(ct) : (o.name || 'Contact'), d, st, b: !!(tuJobs.length || tuDone.length), rv: Math.round(rv + fov), g: gLink(o.contactId), h: cust ? `${HCP}/customers/${cust.id}` : null });
+      list.push({ n: ghlName(ct) !== 'Contact' ? ghlName(ct) : (o.name || 'Contact'), d, st, b: !!(tuJobs.length || tuDone.length), rv: Math.round(rv + fov), g: gLink(o.contactId), h: cust ? hcpLink('customer', cust.id) : null });
     }
     list.sort((a, b) => b.rv - a.rv || (b.b - a.b) || (a.d < b.d ? 1 : -1));
     return { name: cp.name, start: starts.sort()[0] || null, opps: list.length, stages: Object.entries(stages).sort((a, b) => b[1] - a[1]), booked, done, revenue: Math.round(revenue), followOn: Math.round(followOn), otherWork: Math.round(otherWork), window: win, list: list.slice(0, 1200) };
