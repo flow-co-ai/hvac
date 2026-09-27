@@ -42,7 +42,45 @@
     "exclude_campaigns": "croa|fcra|tcpa|dental|sleep apnea|full smile|opendental|digital ocean|hir(e|ing)|job post|career|recruit|now hiring",
     "brand_queries": "quality|fibid|hvac ?365|qualityhvac",
     "exclude_google_lsa": "localservices|local ?services|^ghs|home ?services",
-    "rank_exclude": "minneapolis|minnesota|\\bmn\\b|golden valley|plymouth|robbinsdale|new hope|st\\.? louis park|crystal|edina|maple grove|minnetonka|wayzata|brooklyn (park|center)|hopkins|medicine lake|osseo|blaine|coon rapids|shoreview|arden hills|mounds view|vadnais|lake elmo|corcoran|long lake|deephaven|shorewood|columbia heights|medina|ramsey|lakeville|hastings|554\\d\\d|crestwood mo|jobs?\\b|hiring|for sale|supply|parts"
+    "rank_exclude": "minneapolis|minnesota|\\bmn\\b|golden valley|plymouth|robbinsdale|new hope|st\\.? louis park|crystal|edina|maple grove|minnetonka|wayzata|brooklyn (park|center)|hopkins|medicine lake|osseo|blaine|coon rapids|shoreview|arden hills|mounds view|vadnais|lake elmo|corcoran|long lake|deephaven|shorewood|columbia heights|medina|ramsey|lakeville|hastings|554\\d\\d|crestwood mo|jobs?\\b|hiring|for sale|supply|parts",
+    "sites": [
+      {
+        "id": "sc-domain:qualityhvac365.com",
+        "name": "qualityhvac365.com"
+      },
+      {
+        "id": "sc-domain:fibid.com",
+        "name": "fibid.com",
+        "pending": true
+      }
+    ],
+    "towns": "crestwood|orland park|homer glen|burr ridge|frankfort|oak forest|midlothian|alsip|palos|tinley park|oak lawn|worth|mokena|lockport|lemont|chicago ridge|hickory hills|oak brook|hinsdale|willowbrook|darien|downers grove|new lenox|blue island|evergreen park",
+    "topics": [
+      [
+        "Tune-up and maintenance",
+        "tune|maint|clean|inspection|check"
+      ],
+      [
+        "Replacement and install",
+        "install|replac|new (ac|furnace|system|unit)|cost|price|quote"
+      ],
+      [
+        "Repair and emergency",
+        "repair|fix|emergency|same day|not (working|heating|cooling)|broken|no heat"
+      ],
+      [
+        "Heating",
+        "furnace|heat|boiler"
+      ],
+      [
+        "Cooling",
+        "\\bac\\b|a/c|air condition|cooling|mini split|ductless|heat pump"
+      ],
+      [
+        "Commercial",
+        "commercial|rooftop|business|industrial"
+      ]
+    ]
   },
   "channels": [
     {
@@ -98,7 +136,8 @@
     {
       "name": "Fall tune-up",
       "pipeline": "tune",
-      "window_days": 90
+      "window_days": 60,
+      "offer": "tune"
     }
   ],
   "answering_hours": [
