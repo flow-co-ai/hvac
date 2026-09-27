@@ -33,10 +33,12 @@ nav.tabs{background:var(--card);border-bottom:1px solid var(--line);position:sti
 nav.tabs .wrap{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
 nav.tabs button{background:none;border:0;border-bottom:3px solid transparent;padding:13px 12px 10px;font-weight:500;color:var(--muted);cursor:pointer;white-space:nowrap}
 nav.tabs button[aria-selected=true]{color:var(--ink);border-bottom-color:var(--ink)}
-main{padding:34px 0 60px}
+main.wrap{padding-top:30px;padding-bottom:56px}
 .view{display:none}.view.on{display:block}
-h2.head{font-family:var(--disp);font-weight:600;font-size:clamp(28px,4.2vw,44px);line-height:1.05;margin:0 0 10px;max-width:30ch;letter-spacing:-.2px}
-.brief{margin:0 0 22px;padding:0;list-style:none;max-width:78ch;color:#2d3a48}
+h2.head{font-family:var(--disp);font-weight:600;font-size:clamp(30px,4vw,46px);line-height:1.04;margin:0 0 14px;max-width:30ch;letter-spacing:-.3px;text-wrap:balance}
+.period{font-size:13.5px;color:var(--muted);margin:0 0 6px}
+.brief{margin:0 0 26px;padding:0;list-style:none;max-width:72ch;color:#2d3a48;font-size:15.5px}
+.brief li{text-wrap:pretty}
 .brief li{padding-left:16px;position:relative;margin:3px 0}
 .brief li:before{content:"";position:absolute;left:0;top:.62em;width:7px;height:7px;border-radius:2px;background:var(--steel)}
 .brief li.good:before{background:var(--up)}.brief li.bad:before{background:var(--down)}.brief li.adj:before{background:var(--adj)}
@@ -44,12 +46,12 @@ h2.head{font-family:var(--disp);font-weight:600;font-size:clamp(28px,4.2vw,44px)
 .stat{background:var(--card);padding:14px 16px 12px;min-width:0}
 .stat .k{font-size:13px;color:var(--muted);line-height:1.25}
 .stat .v{font-family:var(--disp);font-weight:600;font-size:34px;line-height:1.05;margin:4px 0 2px;font-variant-numeric:tabular-nums}
-.stat .d{font-size:12.5px;color:var(--muted);min-height:18px}
+.stat .d{font-size:12.5px;color:var(--muted);min-height:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .d .up{color:var(--up);font-weight:600}.d .down{color:var(--down);font-weight:600}
 .stat svg{display:block;width:100%;height:26px;margin-top:4px}
 .grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:18px}
-.panel{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 18px;min-width:0}
-.panel h3{font-family:var(--disp);font-weight:600;font-size:21px;margin:0 0 2px;line-height:1.15}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px 16px;min-width:0}
+.panel h3{font-family:var(--disp);font-weight:600;font-size:22px;margin:0 0 3px;line-height:1.15}
 .panel .sub{font-size:13px;color:var(--muted);margin:0 0 12px}
 .s12{grid-column:span 12}.s8{grid-column:span 8}.s7{grid-column:span 7}.s6{grid-column:span 6}.s5{grid-column:span 5}.s4{grid-column:span 4}
 svg.chart{display:block;width:100%;height:auto;overflow:visible}
@@ -70,7 +72,7 @@ tr.tot td{font-weight:600;border-top:1px solid var(--ink2)}
 .todo li:last-child{border:0}
 .todo b{font-family:var(--disp);font-size:28px;font-weight:600;line-height:1;text-align:right;font-variant-numeric:tabular-nums}
 .todo b.hot{color:var(--heat)}
-.todo span{font-size:14px}.todo small{display:block;color:var(--muted);font-size:12.5px}
+.todo span{font-size:14.5px;font-weight:500}.todo small{display:block;color:var(--muted);font-size:12.5px;font-weight:400;margin-top:2px}
 .todo a{color:var(--cool);font-weight:500}
 .lst{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
 .lcard .row{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid #eef1f4;font-size:14px}
@@ -85,6 +87,8 @@ tr.tot td{font-weight:600;border-top:1px solid var(--ink2)}
 .grp{font-size:12.5px;color:var(--muted);margin:14px 0 2px}
 .more{background:none;border:1px solid var(--line);border-radius:6px;padding:6px 12px;margin-top:10px;cursor:pointer;font-size:13.5px}
 .note{font-size:12.5px;color:var(--muted);margin-top:10px}
+.hb{display:grid;grid-template-columns:minmax(0,130px) minmax(0,1fr) 64px;gap:10px;align-items:center;padding:6px 0;font-size:14px}
+.hb span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.hb div{background:#eef1f4;border-radius:3px;height:12px}.hb i{display:block;height:100%;border-radius:3px}.hb b{text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
 .heat{display:grid;grid-template-columns:34px repeat(24,minmax(0,1fr));gap:2px;font-size:10.5px;color:var(--muted)}
 .heat div{aspect-ratio:1/1;border-radius:2px;min-width:0}
 .heat .lab{aspect-ratio:auto;display:flex;align-items:center}
@@ -92,7 +96,7 @@ tr.tot td{font-weight:600;border-top:1px solid var(--ink2)}
 .split{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .split .box{border:1px solid var(--line);border-radius:8px;padding:10px 12px}
 .split .box .v{font-family:var(--disp);font-size:30px;font-weight:600;line-height:1.1}
-footer{font-size:12.5px;color:var(--muted);padding:20px 0 40px;border-top:1px solid var(--line)}
+footer.wrap{font-size:12.5px;color:var(--muted);padding-top:18px;padding-bottom:40px;border-top:1px solid var(--line)}
 footer p{margin:4px 0;max-width:90ch}
 #gate{position:fixed;inset:0;background:var(--ink);display:flex;align-items:center;justify-content:center;z-index:20;padding:20px}
 #gate form{background:#fff;border-radius:12px;padding:26px;width:100%;max-width:360px}
@@ -154,8 +158,9 @@ const pct = (v) => v == null || !isFinite(v) ? '—' : Math.round(v * 100) + '%'
 const sum = (a, i0, i1) => { let s = 0; for (let i = Math.max(0, i0); i <= i1 && i < a.length; i++) s += a[i] || 0; return s; };
 const MN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const mLabel = (m) => MN[+m.slice(5, 7) - 1];
+const mTick = (m, i) => (i === 0 || m.endsWith('-01')) ? `${mLabel(m)} ’${m.slice(2, 4)}` : mLabel(m);
 const mLong = (m) => ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][+m.slice(5, 7) - 1];
-const COLORS = ['var(--c1)', 'var(--c2)', 'var(--c3)', 'var(--c4)', 'var(--c5)', 'var(--c7)', 'var(--c6)'];
+const COLORS = ['var(--c1)', 'var(--c2)', 'var(--c3)', 'var(--c4)', 'var(--c5)', 'var(--c6)', 'var(--c7)'];
 
 // ---------- decrypt ----------
 const b64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
@@ -195,15 +200,15 @@ function range() {
   if (R === 'month') {
     const i0 = idxOf(mStart), len = t - i0 + 1;
     const pm = prevMonth(today.slice(0, 7)); const p0 = idxOf(pm + '-01'); const p1 = i0 - 1;
-    return { i0, i1: t, p0, p1: Math.min(p1, p0 + len - 1), label: mLong(today) + ' to date', short: 'month to date', vs: `vs same days of ${mLong(pm)}`, partial: true, months: [today.slice(0, 7)], fullPrev: [p0, p1] };
+    return { i0, i1: t, p0, p1: Math.min(p1, p0 + len - 1), label: mLong(today) + ' to date', short: 'this month so far', vs: `vs ${mLabel(pm)} 1–${len}`, partial: true, months: [today.slice(0, 7)], fullPrev: [p0, p1] };
   }
   if (R === 'last') {
     const pm = prevMonth(today.slice(0, 7)); const i0 = idxOf(pm + '-01'), i1 = idxOf(mStart) - 1;
     const ppm = prevMonth(pm); const p0 = idxOf(ppm + '-01');
-    return { i0, i1, p0, p1: i0 - 1, label: mLong(pm), short: mLong(pm), vs: 'vs ' + mLong(ppm), months: [pm] };
+    return { i0, i1, p0, p1: i0 - 1, label: mLong(pm), short: 'in ' + mLong(pm), vs: 'vs ' + mLong(ppm), months: [pm] };
   }
   const L = +R; const i0 = Math.max(0, n - L), p1 = i0 - 1, p0 = Math.max(0, p1 - L + 1);
-  return { i0, i1: t, p0, p1, label: L === 90 ? 'Last 90 days' : 'Last 12 months', short: L === 90 ? 'last 90 days' : 'last 12 months', vs: p1 - p0 + 1 >= L ? 'vs the ' + L + ' days before' : null, months: monthsIn(days[i0], today) };
+  return { i0, i1: t, p0, p1, label: L === 90 ? 'Last 90 days' : 'Last 12 months', short: L === 90 ? 'over the last 90 days' : 'over the last 12 months', vs: p1 - p0 + 1 >= L ? (L === 90 ? 'vs the prior 90 days' : 'vs the prior year') : null, months: monthsIn(days[i0], today) };
 }
 function prevMonth(m) { let [y, mo] = m.split('-').map(Number); mo--; if (!mo) { mo = 12; y--; } return `${y}-${String(mo).padStart(2, '0')}`; }
 function monthsIn(a, b) { const out = []; let m = a.slice(0, 7); while (m <= b.slice(0, 7)) { out.push(m); let [y, mo] = m.split('-').map(Number); mo++; if (mo > 12) { mo = 1; y++; } m = `${y}-${String(mo).padStart(2, '0')}`; } return out; }
@@ -269,10 +274,12 @@ function lsaFor(rg, prev) {
   return { v: known ? s : (missing.length ? null : 0), missing };
 }
 function cohortsIn(rg) {
+  // HCP customers grouped by the month of their first completed job
   const out = {}; const ms = rg.months || monthsIn(D.days[rg.i0], D.days[rg.i1]);
-  for (const m of ms) for (const [ch, c] of Object.entries(D.cohorts[m] || {})) { const o = out[ch] ||= { leads: 0, booked: 0, customers: 0, revenue: 0 }; for (const k in o) o[k] += c[k]; }
+  for (const m of ms) for (const [ch, c] of Object.entries(D.custCohorts[m] || {})) { const o = out[ch] ||= { customers: 0, jobs: 0, revenue: 0 }; for (const k in o) o[k] += c[k]; }
   return out;
 }
+const monthSpan = (rg) => { const ms = rg.months; return ms.length === 1 ? mLong(ms[0]) : `${mLabel(ms[0])} ’${ms[0].slice(2, 4)} to ${mLabel(ms[ms.length - 1])} ’${ms[ms.length - 1].slice(2, 4)}`; };
 function leadsTotal(rg, prev) { let s = 0; for (const ch of D.channels) s += S(D.daily.leads[ch], rg, prev) ?? 0; return s; }
 
 // ---------- views ----------
@@ -292,9 +299,9 @@ function pulse(rg) {
   const ba = D.snapshot.beforeAfter, rate = (o) => { const t = o.answered + o.missed + o.voicemail; return t ? (o.missed + o.voicemail) / t : null; };
   const brief = [];
   if (prev != null && rg.vs) brief.push([rev >= prev ? 'good' : 'bad', `Revenue is ${rev >= prev ? 'up' : 'down'} ${pct(Math.abs(rev - prev) / (prev || 1))} ${rg.vs}, on ${fmtN(jobs)} completed jobs.`]);
-  if (best && best[1] > 0) brief.push(['good', `Leads from ${best[0]} in this period have already turned into ${fmt$(best[1])} in completed jobs.`]);
+  if (best && best[1] > 0) brief.push(['good', `${best[0]} brought in the most revenue from new customers: ${fmt$(best[1])} so far from customers who started ${R === 'month' ? 'this month' : 'in this period'}.`]);
   const rb = rate(ba.before), ra = rate(ba.after);
-  if (rb != null && ra != null && ba.after.answered + ba.after.missed + ba.after.voicemail >= 5) brief.push([ra < rb ? 'good' : 'adj', `Tracked calls missed or sent to voicemail: ${pct(ra)} since call routing changed on ${fmtDate(D.meta.routingFix)}, from ${pct(rb)} before.`]);
+  if (rb != null && ra != null && ba.after.answered + ba.after.missed + ba.after.voicemail >= 5) brief.push([ra < rb ? 'good' : 'adj', `Since call routing changed on ${fmtDate(D.meta.routingFix)}, ${pct(ra)} of tracked calls were missed or went to voicemail, ${ra < rb ? 'down' : 'up'} from ${pct(rb)}.`]);
   if (w.total) brief.push(['adj', `${w.total} customer conversations are waiting on a reply, ${w.d3p} of them for more than 3 days.`]);
   const mo = monthly(r);
   return `<h2 class="head">${esc(head)}</h2>
@@ -308,13 +315,13 @@ function pulse(rg) {
   </div>
   <div class="grid">
     <div class="panel s8"><h3>Revenue by month</h3><p class="sub">Completed jobs in Housecall Pro. The current month is to date.</p>
-      ${bars(mo.map((x, i) => ({ label: mLabel(x.m), parts: [{ v: x.v, c: 'var(--cool)' }], faded: i === mo.length - 1 })), { money: true, aria: 'Revenue by month' })}</div>
+      ${bars(mo.map((x, i) => ({ label: mTick(x.m, i), parts: [{ v: x.v, c: 'var(--cool)' }], faded: i === mo.length - 1 })), { money: true, aria: 'Revenue by month' })}</div>
     <div class="panel s4"><h3>Waiting on the team</h3><p class="sub">Open right now</p>
       <ul class="todo">
-        <li><b class="${w.total ? 'hot' : ''}">${w.total}</b><span>Conversations waiting on a reply<small>${w.lt1} today · ${w.d1_3} for 1–3 days · ${w.d3p} older${D.snapshot.link ? ` · <a href="${D.snapshot.link}" target="_blank" rel="noopener">Open in GoHighLevel</a>` : ''}</small></span></li>
-        <li><b>${D.snapshot.estimates.open}</b><span>Estimates not yet approved<small>${fmt$(D.snapshot.estimates.value)} in value, ${D.snapshot.estimates.aged} older than 30 days · Housecall Pro › Estimates</small></span></li>
-        <li><b>${D.snapshot.needsScheduling}</b><span>Jobs that still need scheduling<small>Housecall Pro › Jobs, filtered to Unscheduled</small></span></li>
-        <li><b class="${sum(D.daily.calls.missed, D.days.length - 7, D.days.length - 1) ? 'hot' : ''}">${fmtN(sum(D.daily.calls.missed, D.days.length - 7, D.days.length - 1) + sum(D.daily.calls.voicemail, D.days.length - 7, D.days.length - 1))}</b><span>Tracked calls missed or to voicemail, last 7 days<small>Worth a callback check in GoHighLevel</small></span></li>
+        <li><b class="${w.total ? 'hot' : ''}">${w.total}</b><span>Conversations waiting on a reply<small>${w.lt1} new today, ${w.d1_3} waiting 1–3 days, ${w.d3p} waiting longer.${D.snapshot.link ? ` <a href="${D.snapshot.link}" target="_blank" rel="noopener">Open in GoHighLevel</a>` : ''}</small></span></li>
+        <li><b>${D.snapshot.estimates.open}</b><span>Estimates not yet approved<small>${fmt$(D.snapshot.estimates.value)} in value, ${D.snapshot.estimates.aged} older than 30 days. Housecall Pro › Estimates</small></span></li>
+        <li><b>${D.snapshot.needsScheduling}</b><span>Jobs that still need scheduling<small>Housecall Pro › Jobs › Unscheduled</small></span></li>
+        <li><b class="${sum(D.daily.calls.missed, D.days.length - 7, D.days.length - 1) ? 'hot' : ''}">${fmtN(sum(D.daily.calls.missed, D.days.length - 7, D.days.length - 1) + sum(D.daily.calls.voicemail, D.days.length - 7, D.days.length - 1))}</b><span>Missed tracked calls, last 7 days<small>Includes voicemails. Check callbacks in GoHighLevel.</small></span></li>
       </ul></div>
   </div>`;
 }
@@ -331,15 +338,15 @@ function leads(rg) {
   const heat = D.snapshot.heat, all = D.snapshot.heatAll, mx = Math.max(1, ...heat.flat());
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   let hm = '<div></div>' + Array.from({ length: 24 }, (_, h) => `<div class="hr">${h % 3 === 0 ? (h === 0 ? '12a' : h < 12 ? h + 'a' : h === 12 ? '12p' : (h - 12) + 'p') : ''}</div>`).join('');
-  heat.forEach((row, d) => { hm += `<div class="lab">${days[d]}</div>` + row.map((v, h) => `<div title="${days[d]} ${h}:00 · ${v} missed of ${all[d][h]} calls" style="background:${v ? `rgba(194,65,12,${0.18 + 0.82 * v / mx})` : all[d][h] ? '#e3edf7' : '#f3f5f7'}"></div>`).join(''); });
+  heat.forEach((row, d) => { hm += `<div class="lab">${days[d]}</div>` + row.map((v, h) => `<div title="${days[d]} ${h}:00, ${v} missed of ${all[d][h]} calls" style="background:${v ? `rgba(194,65,12,${0.18 + 0.82 * v / mx})` : all[d][h] ? '#e3edf7' : '#f3f5f7'}"></div>`).join(''); });
   const rate = (o) => { const t = o.answered + o.missed + o.voicemail; return t ? (o.missed + o.voicemail) / t : null; };
   const head = tot ? `${pct((mis + vm) / tot)} of tracked calls were missed or went to voicemail.` : `${fmtN(ld)} new leads, ${rg.short}.`;
   const bySource = D.channels.map((ch, k) => [ch, S(D.daily.leads[ch], rg), COLORS[k % COLORS.length]]).filter((x) => x[1]).sort((a, b) => b[1] - a[1]);
   return `<h2 class="head">${esc(head)}</h2>
   <ul class="brief">
     <li class="${resp.within5 >= 0.8 ? 'good' : 'adj'}">${resp.n ? `${pct(resp.within5)} of new leads got a first human reply within 5 minutes; ${resp.over60} waited more than an hour.` : 'First-reply time appears once new leads have message history.'}</li>
-    <li>Live answering covers 8am to 8pm. Calls before 8am and after 8pm show as the left and right edges of the grid below.</li>
-    <li>Answered includes any connected call. A connected call is not always a conversation, so the missed share is the floor.</li>
+    <li>Live answering runs 8am to 8pm. The grid below shows the hours when calls slip through.</li>
+    <li>A connected call counts as answered even if no one spoke, so the real missed share may be higher.</li>
   </ul>
   <div class="stats">
     ${stat('New leads', fmtN(ld), delta(ld, ldP, rg), last8w(D.channels.reduce((a, ch) => a.map((v, i) => v + D.daily.leads[ch][i]), new Array(D.days.length).fill(0))))}
@@ -374,7 +381,7 @@ function jobsView(rg) {
   const mos = monthsIn(D.days[Math.max(0, D.days.length - 365)], D.meta.today);
   const byM = (t) => { const o = {}; D.days.forEach((d, i) => { const m = d.slice(0, 7); o[m] = (o[m] || 0) + D.daily.rev[t][i]; }); return o; };
   const mm = Object.fromEntries(T.map((t) => [t, byM(t)]));
-  const series = mos.map((m, i) => ({ label: mLabel(m), parts: T.map((t) => ({ v: mm[t][m] || 0, c: col[t] })), faded: i === mos.length - 1 }));
+  const series = mos.map((m, i) => ({ label: mTick(m, i), parts: T.map((t) => ({ v: mm[t][m] || 0, c: col[t] })), faded: i === mos.length - 1 }));
   const sch = D.snapshot.schedule, e = D.snapshot.estimates;
   const head = repl.v && rev ? `Replacements were ${pct(repl.v / rev)} of revenue on ${fmtN(repl.n)} jobs.` : `${fmtN(n)} jobs completed, averaging ${fmt$(tk)}.`;
   return `<h2 class="head">${esc(head)}</h2>
@@ -404,48 +411,57 @@ function jobsView(rg) {
 }
 
 function mkt(rg) {
-  const cs = cohortsIn(rg), sp = paidSpend(rg), spP = paidSpend(rg, true);
-  const paid = D.paid.map((ch) => ({ ch, s: sp[ch], ...(cs[ch] || { leads: 0, booked: 0, customers: 0, revenue: 0 }) }));
-  const lsaRow = paid.find((r) => r.ch === 'LSA');
-  const other = D.channels.filter((c) => !D.paid.includes(c)).map((ch) => ({ ch, ...(cs[ch] || { leads: 0, booked: 0, customers: 0, revenue: 0 }) })).filter((r) => r.leads);
-  const T = paid.reduce((a, r) => ({ s: a.s + (r.s || 0), leads: a.leads + r.leads, booked: a.booked + r.booked, customers: a.customers + r.customers, revenue: a.revenue + r.revenue }), { s: 0, leads: 0, booked: 0, customers: 0, revenue: 0 });
-  const priced = paid.filter((r) => r.s != null), roiRev = priced.reduce((x, r) => x + r.revenue, 0);
-  const roi = T.s ? roiRev / T.s : null;
-  const row = (r, spend = true) => r.s == null && spend ? `<tr><td>${esc(r.ch)}</td><td>Not entered</td><td>${fmtN(r.leads)}</td><td>—</td><td>${fmtN(r.booked)}</td><td>${fmtN(r.customers)}</td><td>${fmt$(r.revenue)}</td><td>—</td></tr>` : `<tr><td>${esc(r.ch)}</td><td>${spend ? fmt$(r.s) : '—'}</td><td>${fmtN(r.leads)}</td><td>${spend && r.leads ? fmt$(r.s / r.leads) : '—'}</td><td>${fmtN(r.booked)}</td><td>${fmtN(r.customers)}</td><td>${fmt$(r.revenue)}</td><td>${spend && r.s ? `<span class="pill ${r.revenue >= r.s ? 'up' : r.revenue ? 'adj' : 'n'}">${(r.revenue / r.s).toFixed(1)}×</span>` : '—'}</td></tr>`;
-  const mos = monthsIn(D.days[Math.max(0, D.days.length - 365)], D.meta.today).filter((m) => m >= '2026-04');
-  const spM = (m) => { let s = 0; D.days.forEach((d, i) => { if (d.startsWith(m)) s += D.daily.spend['Google Ads'][i] + D.daily.spend.Meta[i]; }); return s + (D.lsa[m] || 0); };
-  const rvM = (m) => D.paid.reduce((s, ch) => s + (D.cohorts[m]?.[ch]?.revenue || 0), 0);
+  const cs = cohortsIn(rg), sp = paidSpend(rg);
+  const z = { customers: 0, jobs: 0, revenue: 0 };
+  const rows = D.channels.map((ch) => ({ ch, paid: D.paid.includes(ch), s: D.paid.includes(ch) ? sp[ch] : undefined, leads: S(D.daily.leads[ch], rg), ...(cs[ch] || z) }));
+  const paid = rows.filter((r) => r.paid), other = rows.filter((r) => !r.paid && (r.leads || r.customers));
+  const priced = paid.filter((r) => r.s != null);
+  const T = paid.reduce((a, r) => ({ s: a.s + (r.s || 0), leads: a.leads + r.leads, customers: a.customers + r.customers, revenue: a.revenue + r.revenue }), { s: 0, leads: 0, customers: 0, revenue: 0 });
+  const roiRev = priced.reduce((x, r) => x + r.revenue, 0), roi = T.s ? roiRev / T.s : null;
+  const ret = (r) => r.s ? `<span class="pill ${r.revenue >= r.s ? 'up' : r.revenue ? 'adj' : 'n'}">${(r.revenue / r.s).toFixed(1)}×</span>` : '—';
+  const row = (r) => `<tr><td>${esc(r.ch)}</td><td>${!r.paid ? '—' : r.s == null ? 'Not entered' : fmt$(r.s)}</td><td>${fmtN(r.leads)}</td><td>${r.paid && r.s && r.leads ? fmt$(r.s / r.leads) : '—'}</td><td>${fmtN(r.customers)}</td><td>${r.paid && r.s && r.customers ? fmt$(r.s / r.customers) : '—'}</td><td>${fmt$(r.revenue)}</td><td>${r.paid && r.s != null ? ret(r) : '—'}</td></tr>`;
+  // revenue in the range by source, from every completed job
+  const bySrc = D.sources.map((ch, k) => [ch, S(D.daily.revBy[ch], rg)]).filter((x) => x[1] > 0).sort((a, b) => b[1] - a[1]);
+  const allRev = bySrc.reduce((a, x) => a + x[1], 0), mktRev = bySrc.filter(([ch]) => ch !== 'Existing customers' && ch !== 'Source not captured').reduce((a, x) => a + x[1], 0);
+  const srcColor = (ch) => D.paid.includes(ch) ? 'var(--cool)' : ch === 'Existing customers' ? 'var(--c6)' : ch === 'Source not captured' ? '#c9d1da' : 'var(--c5)';
+  const hb = bySrc.map(([ch, v]) => `<div class="hb"><span>${esc(ch)}</span><div><i style="width:${(v / (bySrc[0][1] || 1) * 100).toFixed(1)}%;background:${srcColor(ch)}"></i></div><b>${fmt$(v)}</b></div>`).join('');
+  const mos = monthsIn(D.days[Math.max(0, D.days.length - 365)], D.meta.today).filter((m) => m >= D.marketingStart.slice(0, 7));
+  const spM = (m) => { let x = 0; D.days.forEach((d, i) => { if (d.startsWith(m)) x += D.daily.spend['Google Ads'][i] + D.daily.spend.Meta[i]; }); return x + (D.lsa[m] || 0); };
+  const rvM = (m) => D.paid.reduce((x, ch) => x + (D.custCohorts[m]?.[ch]?.revenue || 0), 0);
   const series = [];
-  mos.forEach((m, i) => { series.push({ label: mLabel(m), parts: [{ v: spM(m), c: 'var(--steel)' }], faded: i === mos.length - 1 }); series.push({ label: '', parts: [{ v: rvM(m), c: 'var(--up)' }], faded: i === mos.length - 1 }); });
-  const miss = sp.lsaMissing.filter((m) => m < D.meta.today.slice(0, 7));
-  const curMiss = sp.lsaMissing.includes(D.meta.today.slice(0, 7));
+  mos.forEach((m, i) => { series.push({ label: mTick(m, i), parts: [{ v: spM(m), c: 'var(--steel)' }], faded: i === mos.length - 1 }); series.push({ label: '', parts: [{ v: rvM(m), c: 'var(--up)' }], faded: i === mos.length - 1 }); });
+  const miss = sp.lsaMissing.filter((m) => m < D.meta.today.slice(0, 7)), curMiss = sp.lsaMissing.includes(D.meta.today.slice(0, 7));
   const stale = Object.entries(D.meta.lastSpend || {}).filter(([, d]) => D.meta.adsActive && (new Date(D.meta.today) - new Date(d)) / 864e5 > 5);
-  const head = roi != null && T.revenue ? `Every $1 in ads has returned $${roi.toFixed(2)} in completed jobs so far.` : `${fmt$(T.s)} in ad spend, ${fmtN(T.leads)} paid leads.`;
+  const a = D.attribution, newTot = a.ghl_phone + a.ghl_email + a.hcp_field + a.not_captured;
+  const who = priced.length < paid.length ? priced.map((r) => r.ch).join(' and ') : 'ads';
+  const head = roi != null && roiRev ? `Customers from ${who} have paid ${fmt$(roiRev)} so far, ${roi.toFixed(1)}× what ${priced.length < paid.length ? 'those ads' : 'the ads'} cost.` : `${fmtN(T.customers)} new customers came from ads.`;
   return `<h2 class="head">${esc(head)}</h2>
   <ul class="brief">
-    <li>Leads are followed from the ${R === 'month' || R === 'last' ? 'month' : 'months'} they arrived. A channel gets credit only when its lead existed before the customer’s first job.</li>
-    <li>Booked and completed come from Housecall Pro. Revenue keeps growing as these leads finish more work.</li>
-    ${miss.length ? `<li class="adj">LSA spend for ${miss.map(mLong).join(', ')} hasn’t been entered yet, so LSA return is incomplete for those months.</li>` : ''}
-    ${curMiss ? `<li>LSA spend for ${mLong(D.meta.today)} is entered from billing after the month closes, so paid totals leave it out until then.</li>` : ''}
+    <li>Revenue is completed jobs in Housecall Pro. Each new customer is matched to the lead that came in before their first job.</li>
+    ${newTot ? `<li class="${a.not_captured / newTot > 0.3 ? 'adj' : ''}">Since ${fmtDate(D.marketingStart)}, ${pct(1 - a.not_captured / newTot)} of new customers were matched to a source. The rest are counted but credited to no channel.</li>` : ''}
+    ${miss.length ? `<li class="adj">LSA spend for ${miss.map(mLong).join(', ')} hasn’t been entered, so LSA return is left out for those months.</li>` : curMiss ? `<li>LSA spend for ${mLong(D.meta.today)} is added once the month’s bill closes.</li>` : ''}
     ${stale.map(([ch, d]) => `<li class="adj">${esc(ch)} data runs through ${fmtDate(d)}.</li>`).join('')}
   </ul>
   <div class="stats">
     ${stat('Ad spend', fmt$(T.s), priced.length < paid.length ? 'Google Ads and Meta' : 'Google Ads, Meta and LSA', null)}
-    ${stat('Paid leads', fmtN(T.leads), '', null)}
-    ${stat('Cost per lead', T.leads ? fmt$(T.s / T.leads) : '—', '', null)}
-    ${stat('Became customers', fmtN(T.customers), T.leads ? pct(T.customers / T.leads) + ' of paid leads' : '', null)}
-    ${stat('Return on spend', roi == null ? '—' : roi.toFixed(1) + '×', fmt$(roiRev) + ' so far' + (priced.length < paid.length ? ', excluding LSA' : ''), null)}
+    ${stat('Leads from ads', fmtN(T.leads), T.leads && T.s ? fmt$(T.s / T.leads) + ' per lead' : '', null)}
+    ${stat('New customers from ads', fmtN(T.customers), T.customers && T.s ? fmt$(T.s / T.customers) + ' per customer' : '', null)}
+    ${stat('Paid so far', fmt$(T.revenue), 'by those customers', null)}
+    ${stat('Return on spend', roi == null ? '—' : roi.toFixed(1) + '×', priced.length < paid.length ? 'LSA left out until entered' : '', null)}
   </div>
   <div class="grid">
-    <div class="panel s12"><h3>Results by channel</h3><p class="sub">Leads that arrived in this period (${esc(rg.label)}), and what they have turned into since</p>
-      <div class="tbl"><table><thead><tr><th>Channel</th><th>Spent</th><th>Leads</th><th>Per lead</th><th>Booked</th><th>Became customers</th><th>Paid so far</th><th>Return</th></tr></thead><tbody>
-      ${paid.map((r) => row(r)).join('')}
-      <tr class="tot"><td>Paid total</td><td>${fmt$(T.s)}</td><td>${fmtN(T.leads)}</td><td>${T.leads ? fmt$(T.s / T.leads) : '—'}</td><td>${fmtN(T.booked)}</td><td>${fmtN(T.customers)}</td><td>${fmt$(T.revenue)}</td><td>${roi == null ? '—' : roi.toFixed(1) + '×'}</td></tr>
-      ${other.length ? `<tr class="sep"><td colspan="8">Unpaid sources</td></tr>` + other.map((r) => row(r, false)).join('') : ''}
+    <div class="panel s12"><h3>Results by channel</h3><p class="sub">Leads that came in and customers whose first job was in ${esc(monthSpan(rg))}. Paid so far counts every completed job from those customers.</p>
+      <div class="tbl"><table><thead><tr><th>Channel</th><th>Spent</th><th>Leads</th><th>Per lead</th><th>New customers</th><th>Per customer</th><th>Paid so far</th><th>Return</th></tr></thead><tbody>
+      ${paid.map(row).join('')}
+      <tr class="tot"><td>Ads total</td><td>${fmt$(T.s)}</td><td>${fmtN(T.leads)}</td><td>${T.leads && T.s ? fmt$(T.s / T.leads) : '—'}</td><td>${fmtN(T.customers)}</td><td>${T.customers && T.s ? fmt$(T.s / T.customers) : '—'}</td><td>${fmt$(T.revenue)}</td><td>${roi == null ? '—' : roi.toFixed(1) + '×'}</td></tr>
+      ${other.length ? `<tr class="sep"><td colspan="8">Unpaid sources</td></tr>` + other.map(row).join('') : ''}
       </tbody></table></div>
-      <p class="note">Cost per lead benchmarks for HVAC: LSA about $51, Meta tune-up $35–65, Google non-brand search about $149. Leads with no source captured are credited to no channel.</p></div>
-    <div class="panel s12"><h3>Spend and what it brought in, by month</h3><p class="sub">Grey is ad spend. Green is completed-job revenue from that month’s paid leads so far.</p>
-      ${bars(series, { money: true, aria: 'Spend vs revenue by month', h: 240, w: 900 })}${legend([['Ad spend', 'var(--steel)'], ['Revenue from paid leads', 'var(--up)']])}</div>
+      <p class="note">Typical HVAC cost per lead: LSA about $51, Meta tune-up offers $35–65, Google non-brand search about $149.</p></div>
+    <div class="panel s5"><h3>Where revenue came from</h3><p class="sub">All completed jobs, ${esc(rg.label)}</p>
+      <div class="hbars">${hb || '<p class="sub">No completed jobs in this range.</p>'}</div>
+      ${allRev ? `<p class="note">${pct(mktRev / allRev)} came from customers brought in by a tracked source since ${fmtDate(D.marketingStart)}.</p>` : ''}</div>
+    <div class="panel s7"><h3>Ad spend and what it brought in</h3><p class="sub">Grey is ad spend by month. Green is what that month’s new ad customers have paid so far.</p>
+      ${bars(series, { money: true, aria: 'Spend vs revenue by month', h: 230 })}${legend([['Ad spend', 'var(--steel)'], ['Paid by new ad customers', 'var(--up)']])}</div>
   </div>`;
 }
 
@@ -456,13 +472,13 @@ function google(rg) {
   const head = `${fmtN(tot)} calls from the three Google listings, ${rg.short}.`;
   const cards = L.map((l) => {
     const c = S(l.calls, rg), cP = S(l.calls, rg, true), w = S(l.web, rg), im = S(l.impr, rg), rv = S(l.reviews, rg);
-    return `<div class="panel lcard"><h3>${esc(l.name)}</h3><p class="sub">${esc(l.area || 'Service-area listing')}${l.moved ? ` · moved ${fmtDate(l.moved)}` : ''}</p>
+    return `<div class="panel lcard"><h3>${esc(l.name)}</h3><p class="sub">${esc(l.area || 'Service-area listing')}${l.moved ? `, moved ${fmtDate(l.moved)}` : ''}</p>
       <div class="row"><span>Calls</span><span><span class="big">${fmtN(c)}</span></span></div>
       <div class="row"><span></span><span class="d" style="font-size:12.5px">${delta(c, cP, rg)}</span></div>
       <div class="row"><span>Website visits</span><b>${fmtN(w)}</b></div>
       <div class="row"><span>Times shown</span><b>${fmtN(im)}</b></div>
       <div class="row"><span>New reviews</span><b>${fmtN(rv)}</b></div>
-      <div class="row"><span>All reviews</span><b>${fmtN(l.total)}${l.rating ? ` · ${l.rating.toFixed(1)}★` : ''}</b></div>
+      <div class="row"><span>All reviews</span><b>${fmtN(l.total)}${l.rating ? `<span style="color:var(--muted);font-weight:400">, ${l.rating.toFixed(1)} stars</span>` : ''}</b></div>
       ${spark(weekly(l.calls, 13).map((x) => x.v), 'var(--cool)')}
       ${l.moved && l.moved >= D.days[rg.i0] ? '<p class="note">Address changed this period. Google re-checks moved listings, so a short dip is expected.</p>' : ''}</div>`;
   }).join('');
@@ -498,7 +514,7 @@ function cust(rg) {
   </div>
   <div class="grid">
     <div class="panel s8"><h3>New customers by month</h3><p class="sub">First completed job in Housecall Pro. The current month is to date.</p>
-      ${bars(mo.map((x, i) => ({ label: mLabel(x.m), parts: [{ v: x.v, c: 'var(--c3)' }], faded: i === mo.length - 1 })), { aria: 'New customers by month' })}</div>
+      ${bars(mo.map((x, i) => ({ label: mTick(x.m, i), parts: [{ v: x.v, c: 'var(--c3)' }], faded: i === mo.length - 1 })), { aria: 'New customers by month' })}</div>
     <div class="panel s4"><h3>Past customers by last visit</h3><p class="sub">Right now</p>
       <ul class="todo">
         <li><b class="hot">${fmtN(c.winback12)}</b><span>Last job 12–24 months ago<small>Most likely to rebook a tune-up</small></span></li>
@@ -511,7 +527,7 @@ function cust(rg) {
 function render() {
   const rg = range();
   const map = { pulse, leads, jobs: jobsView, mkt, google, cust };
-  $('#v-' + V).innerHTML = map[V](rg);
+  $('#v-' + V).innerHTML = `<p class="period">${esc(rg.label)}${rg.vs ? `, compared ${esc(rg.vs.replace(/^vs /, 'with '))}` : ''}</p>` + map[V](rg);
   const b = $('#rkMore'); if (b) b.onclick = () => { showAll = !showAll; render(); };
 }
 function start() {
