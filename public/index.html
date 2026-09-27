@@ -117,6 +117,40 @@ footer p{margin:4px 0;max-width:90ch}
 @media (max-width:980px){.s8,.s7,.s6,.s5,.s4{grid-column:span 12}.lst{grid-template-columns:1fr}}
 @media (max-width:560px){.wrap{padding:0 16px}.brand img{height:38px}.brand div{display:none}.stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.stat:last-child:nth-child(odd){grid-column:span 2}.stat .v{font-size:28px}.ranges{width:100%}.ranges button{flex:1;padding:7px 4px;font-size:13px}.rank{grid-template-columns:34px minmax(0,1fr) 58px}.rank svg{display:none}.heat{font-size:9px;gap:2px}.split{grid-template-columns:1fr}.panel{padding:18px 16px 14px}.hero{padding:26px 0 84px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+.open{cursor:pointer}
+button.open{all:unset;cursor:pointer;display:block;width:100%;box-sizing:border-box}
+.todo li.open:hover,.todo li.open:focus-visible{border-color:var(--sky);background:#f5fbff}
+.todo .go{font-style:normal;font-size:13px;color:var(--sky-d);font-weight:600;white-space:nowrap}
+.todo li{grid-template-columns:62px 1fr auto}
+tr.open:hover td{background:#f5fbff}
+tr.open td:last-child:after{content:"›";color:var(--sky-d);font-weight:700;margin-left:8px}
+.hb.open:hover span{color:var(--sky-d)}
+.stat.open:hover{border-color:var(--sky)}
+.stat .go{font-size:12.5px;color:var(--sky-d);font-weight:600}
+.linkbtn{background:var(--sky-soft);color:var(--sky-d);border:0;border-radius:10px;padding:7px 12px;font-size:13.5px;font-weight:600;cursor:pointer}
+.phead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+#scrim{position:fixed;inset:0;background:rgba(11,22,34,.45);z-index:30;opacity:0;pointer-events:none;transition:opacity .2s}
+#drawer{position:fixed;top:0;right:0;bottom:0;width:min(600px,100vw);background:#fff;z-index:31;transform:translateX(100%);transition:transform .25s ease;display:flex;flex-direction:column;box-shadow:-20px 0 60px -20px rgba(11,22,34,.4);padding-top:env(safe-area-inset-top)}
+body.dr #scrim{opacity:1;pointer-events:auto}body.dr #drawer{transform:none}body.dr{overflow:hidden}
+.dh{padding:20px 22px 14px;border-bottom:1px solid var(--line)}
+.dh h4{margin:0;font-size:21px;font-weight:700;letter-spacing:-.3px;padding-right:44px}
+.dh p{margin:4px 0 12px;color:var(--muted);font-size:13.5px}
+.dh input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font:inherit;background:var(--paper)}
+.dh .x{position:absolute;top:calc(16px + env(safe-area-inset-top));right:16px;width:36px;height:36px;border-radius:10px;border:1px solid var(--line);background:#fff;font-size:20px;line-height:1;cursor:pointer}
+.dsum{display:flex;gap:18px;margin-top:12px;font-size:13.5px;color:var(--muted)}.dsum b{color:var(--ink);font-size:16px}
+.dl{overflow-y:auto;padding:6px 22px 30px;flex:1}
+.di{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 14px;padding:13px 0;border-bottom:1px solid var(--line2)}
+.di .nm{font-weight:600;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.di .vl{font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
+.di .mt{grid-column:1/-1;font-size:13px;color:var(--muted)}
+.di .ln{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+.di .ln a{font-size:12.5px;font-weight:600;text-decoration:none;padding:4px 10px;border-radius:8px}
+.ln .hcp{background:var(--sky-soft);color:var(--sky-d)}.ln .ghl{background:#eef0ff;color:#5b47d6}
+.tag{display:inline-block;font-size:11.5px;font-weight:600;padding:1px 8px;border-radius:99px;background:#eef3f8;color:var(--muted);margin-left:6px;vertical-align:1px}
+.tag.ok{background:#e6f7ec;color:var(--up)}.tag.warn{background:var(--flame-soft);color:#c25010}
+.dempty{color:var(--muted);padding:30px 0;text-align:center}
+@media (prefers-reduced-motion:reduce){#drawer,#scrim{transition:none}}
 </style>
 </head>
 <body>
@@ -156,6 +190,8 @@ footer p{margin:4px 0;max-width:90ch}
   <section class="view" id="v-cust"></section>
 </main>
 <footer class="wrap" id="foot"></footer>
+<div id="scrim"></div>
+<aside id="drawer" role="dialog" aria-modal="true" aria-labelledby="dTitle"><div class="dh" style="position:relative"><button class="x" id="dClose" aria-label="Close">×</button><h4 id="dTitle"></h4><p id="dSub"></p><input id="dSearch" type="search" placeholder="Search by name" aria-label="Search by name"><div class="dsum" id="dSum"></div></div><div class="dl" id="dList"></div></aside>
 
 <script>
 (() => {
@@ -267,7 +303,7 @@ function bars(series, opt = {}) {
   return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opt.aria || 'chart')}">${g}</svg>`;
 }
 const legend = (items) => `<div class="legend">${items.map(([l, c]) => `<span><i style="background:${c}"></i>${esc(l)}</span>`).join('')}</div>`;
-const stat = (k, v, d, sp, c) => `<div class="stat"><div class="k">${k}</div><div class="v">${v}</div><div class="d">${d || ''}</div>${sp ? spark(sp, c) : ''}</div>`;
+const stat = (k, v, d, sp, c, open) => `<div class="stat${open ? ' open' : ''}"${open ? ` data-open="${open}" tabindex="0" role="button"` : ''}><div class="k">${k}${open ? ' <span class="go">›</span>' : ''}</div><div class="v">${v}</div><div class="d">${d || ''}</div>${sp ? spark(sp, c) : ''}</div>`;
 const last8w = (arr) => weekly(arr, 8).map((x) => x.v);
 
 // ---------- computations ----------
@@ -281,7 +317,7 @@ function lsaFor(rg, prev) {
   const [i0, i1] = prev ? [rg.p0, rg.p1] : [rg.i0, rg.i1]; if (i1 < i0) return { v: 0, missing: [] };
   const byM = {}; for (let i = i0; i <= i1; i++) { const m = D.days[i].slice(0, 7); byM[m] = (byM[m] || 0) + 1; }
   let s = 0, known = 0; const missing = [];
-  for (const [m, dn] of Object.entries(byM)) { const v = D.lsa[m]; if (v == null) { if (m >= '2026-04') missing.push(m); continue; } known++; const dim = new Date(+m.slice(0, 4), +m.slice(5, 7), 0).getDate(); s += v * Math.min(1, dn / dim); }
+  for (const [m, dn] of Object.entries(byM)) { const v = D.lsa[m] ?? D.lsaWindsor?.[m]; if (v == null) { if (m >= '2026-04') missing.push(m); continue; } known++; const dim = new Date(+m.slice(0, 4), +m.slice(5, 7), 0).getDate(); s += v * Math.min(1, dn / dim); }
   return { v: known ? s : (missing.length ? null : 0), missing };
 }
 function cohortsIn(rg) {
@@ -315,24 +351,25 @@ function pulse(rg) {
   if (rb != null && ra != null && ba.after.answered + ba.after.missed + ba.after.voicemail >= 5) brief.push([ra < rb ? 'good' : 'adj', `Since call routing changed on ${fmtDate(D.meta.routingFix)}, ${pct(ra)} of tracked calls were missed or went to voicemail, ${ra < rb ? 'down' : 'up'} from ${pct(rb)}.`]);
   if (w.total) brief.push(['adj', `${w.total} customer conversations are waiting on a reply, ${w.d3p} of them for more than 3 days.`]);
   const mo = monthly(r);
+  const m7 = sum(D.daily.calls.missed, D.days.length - 7, D.days.length - 1) + sum(D.daily.calls.voicemail, D.days.length - 7, D.days.length - 1);
   return `<h2 class="head">${esc(head)}</h2>
   <ul class="brief">${brief.slice(0, 3).map(([c, t]) => `<li class="${c}">${esc(t)}</li>`).join('')}</ul>
   <div class="stats">
     ${stat('Revenue', fmt$(rev), delta(rev, prev, rg), last8w(r), 'var(--sky)')}
     ${stat('Jobs completed', fmtN(jobs), delta(jobs, jobsP, rg), last8w(D.daily.cnt.total))}
-    ${stat('New customers', fmtN(nc), delta(nc, ncP, rg), last8w(D.daily.newCustomers))}
-    ${stat('New leads', fmtN(ld), delta(ld, ldP, rg), last8w(D.channels.reduce((a, ch) => a.map((v, i) => v + D.daily.leads[ch][i]), new Array(D.days.length).fill(0))))}
-    ${stat('Waiting on a reply', fmtN(w.total), 'right now', null)}
+    ${stat('New customers', fmtN(nc), delta(nc, ncP, rg), last8w(D.daily.newCustomers), null, 'credited')}
+    ${stat('New leads', fmtN(ld), delta(ld, ldP, rg), last8w(D.channels.reduce((a, ch) => a.map((v, i) => v + D.daily.leads[ch][i]), new Array(D.days.length).fill(0))), null, 'leads')}
+    ${stat('Waiting on a reply', fmtN(w.total), 'right now', null, null, 'waiting')}
   </div>
   <div class="grid">
     <div class="panel s8"><h3>Revenue by month</h3><p class="sub">Completed jobs in Housecall Pro. The current month is to date.</p>
       ${bars(mo.map((x, i) => ({ label: mTick(x.m, i), parts: [{ v: x.v, c: 'var(--sky)' }], faded: i === mo.length - 1 })), { money: true, aria: 'Revenue by month' })}</div>
     <div class="panel s4"><h3>Waiting on the team</h3><p class="sub">Open right now</p>
       <ul class="todo">
-        <li><b class="${w.total ? 'hot' : ''}">${w.total}</b><span>Conversations waiting on a reply<small>${w.lt1} new today, ${w.d1_3} waiting 1–3 days, ${w.d3p} waiting longer.${D.snapshot.link ? ` <a href="${D.snapshot.link}" target="_blank" rel="noopener">Open in GoHighLevel</a>` : ''}</small></span></li>
-        <li><b>${D.snapshot.estimates.open}</b><span>Estimates not yet approved<small>${fmt$(D.snapshot.estimates.value)} in value, ${D.snapshot.estimates.aged} older than 30 days. Housecall Pro › Estimates</small></span></li>
-        <li><b>${D.snapshot.needsScheduling}</b><span>Jobs that still need scheduling<small>Housecall Pro › Jobs › Unscheduled</small></span></li>
-        <li><b class="${sum(D.daily.calls.missed, D.days.length - 7, D.days.length - 1) ? 'hot' : ''}">${fmtN(sum(D.daily.calls.missed, D.days.length - 7, D.days.length - 1) + sum(D.daily.calls.voicemail, D.days.length - 7, D.days.length - 1))}</b><span>Missed tracked calls, last 7 days<small>Includes voicemails. Check callbacks in GoHighLevel.</small></span></li>
+        <li class="open" data-open="waiting" tabindex="0" role="button"><b class="${w.total ? 'hot' : ''}">${w.total}</b><span>Conversations waiting on a reply<small>${w.lt1} new today, ${w.d1_3} waiting 1–3 days, ${w.d3p} waiting longer.</small></span><em class="go">View ›</em></li>
+        <li class="open" data-open="estimates" tabindex="0" role="button"><b>${D.snapshot.estimates.open}</b><span>Estimates not yet approved<small>${fmt$(D.snapshot.estimates.value)} in value, ${D.snapshot.estimates.aged} older than 30 days.</small></span><em class="go">View ›</em></li>
+        <li class="open" data-open="unscheduled" tabindex="0" role="button"><b>${D.snapshot.needsScheduling}</b><span>Jobs that still need scheduling<small>Created in the last 120 days.</small></span><em class="go">View ›</em></li>
+        <li class="open" data-open="missed|7" tabindex="0" role="button"><b class="${m7 ? 'hot' : ''}">${fmtN(m7)}</b><span>Missed tracked calls, last 7 days<small>Includes voicemails.</small></span><em class="go">View ›</em></li>
       </ul></div>
   </div>`;
 }
@@ -360,9 +397,9 @@ function leads(rg) {
     <li>A connected call counts as answered even if no one spoke, so the real missed share may be higher.</li>
   </ul>
   <div class="stats">
-    ${stat('New leads', fmtN(ld), delta(ld, ldP, rg), last8w(D.channels.reduce((a, ch) => a.map((v, i) => v + D.daily.leads[ch][i]), new Array(D.days.length).fill(0))))}
+    ${stat('New leads', fmtN(ld), delta(ld, ldP, rg), last8w(D.channels.reduce((a, ch) => a.map((v, i) => v + D.daily.leads[ch][i]), new Array(D.days.length).fill(0))), null, 'leads')}
     ${stat('Tracked calls', fmtN(tot), crg.i0 > rg.i0 ? `last ${D.meta.messageWindow} days` : '', last8w(c.answered.map((v, i) => v + c.missed[i] + c.voicemail[i])))}
-    ${stat('Missed', fmtN(mis), tot ? pct(mis / tot) + ' of calls' : '', last8w(c.missed), 'var(--flame)')}
+    ${stat('Missed', fmtN(mis), tot ? pct(mis / tot) + ' of calls' : '', last8w(c.missed), 'var(--flame)', 'missed')}
     ${stat('Voicemail', fmtN(vm), tot ? pct(vm / tot) + ' of calls' : '', last8w(c.voicemail))}
     ${stat('Median first reply', resp.median == null ? '—' : resp.median < 1 ? '<1 min' : resp.median < 60 ? Math.round(resp.median) + ' min' : (resp.median / 60).toFixed(1) + ' hr', `new leads, last ${D.meta.messageWindow} days`, null)}
   </div>
@@ -371,10 +408,10 @@ function leads(rg) {
       ${bars(series, { aria: 'Leads by week', every: 2 })}${legend(wk.map((s) => [s.ch, s.c]))}</div>
     <div class="panel s4"><h3>Where leads came from</h3><p class="sub">${esc(rg.label)}</p>
       <div class="tbl"><table><thead><tr><th>Source</th><th>Leads</th><th>Share</th></tr></thead><tbody>
-      ${bySource.map(([ch, v, col]) => `<tr><td><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${col};margin-right:7px"></i>${esc(ch)}</td><td>${fmtN(v)}</td><td>${pct(v / (ld || 1))}</td></tr>`).join('') || '<tr><td colspan="3">No new leads in this range.</td></tr>'}
+      ${bySource.map(([ch, v, col]) => `<tr class="open" data-open="leads|${esc(ch)}" tabindex="0"><td><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${col};margin-right:7px"></i>${esc(ch)}</td><td>${fmtN(v)}</td><td>${pct(v / (ld || 1))}</td></tr>`).join('') || '<tr><td colspan="3">No new leads in this range.</td></tr>'}
       </tbody></table></div>
       <p class="note">Calls to the main phone line aren’t tracked here, so callers from the Google listings who dial it directly don’t appear as leads.</p></div>
-    <div class="panel s8"><h3>When calls are missed</h3><p class="sub">Missed and voicemail calls by hour, last ${D.meta.messageWindow} days. Darker means more missed. Blue squares had calls, all answered.</p>
+    <div class="panel s8"><div class="phead"><h3>When calls are missed</h3><button class="linkbtn" data-open="missed">See missed calls</button></div><p class="sub">Missed and voicemail calls by hour, last ${D.meta.messageWindow} days. Darker means more missed. Blue squares had calls, all answered.</p>
       <div class="heat">${hm}</div></div>
     <div class="panel s4"><h3>Before and after the routing change</h3><p class="sub">Share of tracked calls missed or to voicemail. Routing changed ${fmtDate(D.meta.routingFix)}.</p>
       <div class="split"><div class="box"><div class="k">Before</div><div class="v">${pct(rate(ba.before))}</div><small>${fmtN(ba.before.answered + ba.before.missed + ba.before.voicemail)} calls</small></div>
@@ -406,7 +443,7 @@ function jobsView(rg) {
     ${stat('Jobs completed', fmtN(n), delta(n, nP, rg), last8w(D.daily.cnt.total))}
     ${stat('Average job', fmt$(tk), delta(tk, tkP, rg), null)}
     ${stat('Replacement revenue', fmt$(repl.v), delta(repl.v, repl.vP, rg), last8w(D.daily.rev.Replacement || []))}
-    ${stat('Open estimates', fmt$(e.value), `${e.open} estimates`, null)}
+    ${stat('Open estimates', fmt$(e.value), `${e.open} estimates`, null, null, 'estimates')}
   </div>
   <div class="grid">
     <div class="panel s8"><h3>Revenue by month and type</h3><p class="sub">The current month is to date.</p>
@@ -430,12 +467,12 @@ function mkt(rg) {
   const T = paid.reduce((a, r) => ({ s: a.s + (r.s || 0), leads: a.leads + r.leads, customers: a.customers + r.customers, revenue: a.revenue + r.revenue }), { s: 0, leads: 0, customers: 0, revenue: 0 });
   const roiRev = priced.reduce((x, r) => x + r.revenue, 0), roi = T.s ? roiRev / T.s : null;
   const ret = (r) => r.s ? `<span class="pill ${r.revenue >= r.s ? 'up' : r.revenue ? 'adj' : 'n'}">${(r.revenue / r.s).toFixed(1)}×</span>` : '—';
-  const row = (r) => `<tr><td>${esc(r.ch)}</td><td>${!r.paid ? '—' : r.s == null ? 'Not entered' : fmt$(r.s)}</td><td>${fmtN(r.leads)}</td><td>${r.paid && r.s && r.leads ? fmt$(r.s / r.leads) : '—'}</td><td>${fmtN(r.customers)}</td><td>${r.paid && r.s && r.customers ? fmt$(r.s / r.customers) : '—'}</td><td>${fmt$(r.revenue)}</td><td>${r.paid && r.s != null ? ret(r) : '—'}</td></tr>`;
+  const row = (r) => `<tr class="open" data-open="credited|${esc(r.ch)}" tabindex="0"><td>${esc(r.ch)}</td><td>${!r.paid ? '—' : r.s == null ? 'Not entered' : fmt$(r.s)}</td><td>${fmtN(r.leads)}</td><td>${r.paid && r.s && r.leads ? fmt$(r.s / r.leads) : '—'}</td><td>${fmtN(r.customers)}</td><td>${r.paid && r.s && r.customers ? fmt$(r.s / r.customers) : '—'}</td><td>${fmt$(r.revenue)}</td><td>${r.paid && r.s != null ? ret(r) : '—'}</td></tr>`;
   // revenue in the range by source, from every completed job
   const bySrc = D.sources.map((ch, k) => [ch, S(D.daily.revBy[ch], rg)]).filter((x) => x[1] > 0).sort((a, b) => b[1] - a[1]);
   const allRev = bySrc.reduce((a, x) => a + x[1], 0), mktRev = bySrc.filter(([ch]) => ch !== 'Existing customers' && ch !== 'Source not captured').reduce((a, x) => a + x[1], 0);
   const srcColor = (ch) => D.paid.includes(ch) ? 'var(--sky)' : ch === 'Existing customers' ? '#8aa0b6' : ch === 'Source not captured' ? '#cfd9e3' : 'var(--c5)';
-  const hb = bySrc.map(([ch, v]) => `<div class="hb"><span>${esc(ch)}</span><div><i style="width:${(v / (bySrc[0][1] || 1) * 100).toFixed(1)}%;background:${srcColor(ch)}"></i></div><b>${fmt$(v)}</b></div>`).join('');
+  const hb = bySrc.map(([ch, v]) => `<div class="hb${ch === 'Existing customers' ? '' : ' open'}"${ch === 'Existing customers' ? '' : ` data-open="credited|${esc(ch)}" tabindex="0"`}><span>${esc(ch)}</span><div><i style="width:${(v / (bySrc[0][1] || 1) * 100).toFixed(1)}%;background:${srcColor(ch)}"></i></div><b>${fmt$(v)}</b></div>`).join('');
   const mos = monthsIn(D.days[Math.max(0, D.days.length - 365)], D.meta.today).filter((m) => m >= D.marketingStart.slice(0, 7));
   const spM = (m) => { let x = 0; D.days.forEach((d, i) => { if (d.startsWith(m)) x += D.daily.spend['Google Ads'][i] + D.daily.spend.Meta[i]; }); return x + (D.lsa[m] || 0); };
   const rvM = (m) => D.paid.reduce((x, ch) => x + (D.custCohorts[m]?.[ch]?.revenue || 0), 0);
@@ -443,7 +480,7 @@ function mkt(rg) {
   mos.forEach((m, i) => { series.push({ label: mTick(m, i), parts: [{ v: spM(m), c: 'var(--c6)' }], faded: i === mos.length - 1 }); series.push({ label: '', parts: [{ v: rvM(m), c: 'var(--up)' }], faded: i === mos.length - 1 }); });
   const miss = sp.lsaMissing.filter((m) => m < D.meta.today.slice(0, 7)), curMiss = sp.lsaMissing.includes(D.meta.today.slice(0, 7));
   const stale = Object.entries(D.meta.lastSpend || {}).filter(([, d]) => D.meta.adsActive && (new Date(D.meta.today) - new Date(d)) / 864e5 > 5);
-  const a = D.attribution, newTot = a.ghl_phone + a.ghl_email + a.hcp_field + a.not_captured;
+  const a = D.attribution, newTot = a.phone + a.email + a.name + a.hcp_field + a.not_captured;
   const who = priced.length < paid.length ? priced.map((r) => r.ch).join(' and ') : 'ads';
   const head = roi != null && roiRev ? `Customers from ${who} have paid ${fmt$(roiRev)} so far, ${roi.toFixed(1)}× what ${priced.length < paid.length ? 'those ads' : 'the ads'} cost.` : `${fmtN(T.customers)} new customers came from ads.`;
   return `<h2 class="head">${esc(head)}</h2>
@@ -456,18 +493,18 @@ function mkt(rg) {
   <div class="stats">
     ${stat('Ad spend', fmt$(T.s), priced.length < paid.length ? 'Google Ads and Meta' : 'Google Ads, Meta and LSA', null)}
     ${stat('Leads from ads', fmtN(T.leads), T.leads && T.s ? fmt$(T.s / T.leads) + ' per lead' : '', null)}
-    ${stat('New customers from ads', fmtN(T.customers), T.customers && T.s ? fmt$(T.s / T.customers) + ' per customer' : '', null)}
+    ${stat('New customers from ads', fmtN(T.customers), T.customers && T.s ? fmt$(T.s / T.customers) + ' per customer' : '', null, null, 'credited')}
     ${stat('Paid so far', fmt$(T.revenue), 'by those customers', null)}
     ${stat('Return on spend', roi == null ? '—' : roi.toFixed(1) + '×', priced.length < paid.length ? 'LSA left out until entered' : '', null)}
   </div>
   <div class="grid">
-    <div class="panel s12"><h3>Results by channel</h3><p class="sub">Leads that came in and customers whose first job was in ${esc(monthSpan(rg))}. Paid so far counts every completed job from those customers.</p>
+    <div class="panel s12"><div class="phead"><h3>Results by channel</h3><button class="linkbtn" data-open="credited">Check every match</button></div><p class="sub">Click a channel to see each customer, how they were matched, and links to Housecall Pro and GoHighLevel. Leads that came in and customers whose first job was in ${esc(monthSpan(rg))}. Paid so far counts every completed job from those customers.</p>
       <div class="tbl"><table><thead><tr><th>Channel</th><th>Spent</th><th>Leads</th><th>Per lead</th><th>New customers</th><th>Per customer</th><th>Paid so far</th><th>Return</th></tr></thead><tbody>
       ${paid.map(row).join('')}
       <tr class="tot"><td>Ads total</td><td>${fmt$(T.s)}</td><td>${fmtN(T.leads)}</td><td>${T.leads && T.s ? fmt$(T.s / T.leads) : '—'}</td><td>${fmtN(T.customers)}</td><td>${T.customers && T.s ? fmt$(T.s / T.customers) : '—'}</td><td>${fmt$(T.revenue)}</td><td>${roi == null ? '—' : roi.toFixed(1) + '×'}</td></tr>
       ${other.length ? `<tr class="sep"><td colspan="8">Unpaid sources</td></tr>` + other.map(row).join('') : ''}
       </tbody></table></div>
-      <p class="note">Typical HVAC cost per lead: LSA about $51, Meta tune-up offers $35–65, Google non-brand search about $149.</p></div>
+      <p class="note">${Object.keys(D.lsaCharged || {}).length ? `LSA charged leads from Google: ${rg.months.map((m) => `${mLabel(m)} ${fmtN(D.lsaCharged[m] || 0)}`).join(', ')}. ` : ''}Typical HVAC cost per lead: LSA about $51, Meta tune-up offers $35–65, Google non-brand search about $149.</p></div>
     <div class="panel s5"><h3>Where revenue came from</h3><p class="sub">All completed jobs, ${esc(rg.label)}</p>
       <div class="hbars">${hb || '<p class="sub">No completed jobs in this range.</p>'}</div>
       ${allRev ? `<p class="note">${pct(mktRev / allRev)} came from customers brought in by a tracked source since ${fmtDate(D.marketingStart)}.</p>` : ''}</div>
@@ -517,7 +554,7 @@ function cust(rg) {
     <li class="adj">${fmtN(c.winback12)} past customers haven’t had a job in 12 to 24 months. They are the first group for heating-season outreach.</li>
   </ul>
   <div class="stats">
-    ${stat('New customers', fmtN(nc), delta(nc, ncP, rg), last8w(D.daily.newCustomers))}
+    ${stat('New customers', fmtN(nc), delta(nc, ncP, rg), last8w(D.daily.newCustomers), null, 'credited')}
     ${stat('Customers served', fmtN(c.withJob), 'all time in Housecall Pro', null)}
     ${stat('Came back', pct(c.withJob ? c.repeat / c.withJob : null), `${fmtN(c.repeat)} customers`, null)}
     ${stat('Tune-up follow-on', pct(pt.tuneups ? pt.converted / pt.tuneups : null), `${fmtN(pt.converted)} of ${fmtN(pt.tuneups)} tune-ups`, null)}
@@ -528,11 +565,73 @@ function cust(rg) {
       ${bars(mo.map((x, i) => ({ label: mTick(x.m, i), parts: [{ v: x.v, c: 'var(--c3)' }], faded: i === mo.length - 1 })), { aria: 'New customers by month' })}</div>
     <div class="panel s4"><h3>Past customers by last visit</h3><p class="sub">Right now</p>
       <ul class="todo">
-        <li><b class="hot">${fmtN(c.winback12)}</b><span>Last job 12–24 months ago<small>Most likely to rebook a tune-up</small></span></li>
-        <li><b>${fmtN(c.winback24)}</b><span>Last job over 24 months ago<small>Equipment may be near replacement age</small></span></li>
+        <li class="open" data-open="winback" tabindex="0" role="button"><b class="hot">${fmtN(c.winback12)}</b><span>Last job 12–24 months ago<small>Most likely to rebook a tune-up.</small></span><em class="go">View ›</em></li>
+        <li class="open" data-open="winback" tabindex="0" role="button"><b>${fmtN(c.winback24)}</b><span>Last job over 24 months ago<small>Equipment may be near replacement age.</small></span><em class="go">View ›</em></li>
       </ul></div>
   </div>`;
 }
+
+
+// ---------- side drawer ----------
+const inR = (d, rg) => d >= D.days[rg.i0] && d <= D.days[rg.i1];
+const inMonths = (d, rg) => rg.months.includes(d.slice(0, 7));
+const VIA = { phone: 'matched by phone', email: 'matched by email', name: 'matched by name', hcp_field: 'from the Housecall Pro lead source', not_captured: 'no source found' };
+const links = (h, g, gl = 'GoHighLevel') => `<div class="ln">${h ? `<a class="hcp" href="${h}" target="_blank" rel="noopener">Housecall Pro ↗</a>` : ''}${g ? `<a class="ghl" href="${g}" target="_blank" rel="noopener">${gl} ↗</a>` : ''}</div>`;
+const LISTS = {
+  credited(arg, rg) {
+    const items = D.lists.credited.filter((x) => inMonths(x.first, rg) && (!arg || x.src === arg));
+    return { title: arg ? `New customers from ${arg}` : 'New customers by source', sub: `First completed job in ${monthSpan(rg)}. Paid so far counts every completed job since.`, items, total: items.reduce((a, x) => a + x.rev, 0), unit: 'paid so far',
+      row: (x) => `<div class="di"><div class="nm">${esc(x.n)}${arg ? '' : `<span class="tag">${esc(x.src)}</span>`}</div><div class="vl">${fmt$(x.rev)}</div>
+        <div class="mt">First job ${fmtDate(x.first)}, ${x.jobs} ${x.jobs === 1 ? 'job' : 'jobs'}. ${x.lead ? `Lead came in ${fmtDate(x.lead)}, ${VIA[x.via]}${x.raw ? `. GHL source: ${esc(x.raw)}` : ''}.` : esc(VIA[x.via] || '') + '.'}</div>${links(x.h, x.g, 'GHL contact')}</div>` };
+  },
+  leads(arg, rg) {
+    const items = D.lists.leads.filter((x) => inR(x.d, rg) && (!arg || x.ch === arg));
+    return { title: arg ? `Leads from ${arg}` : 'New leads', sub: `${rg.label}. Booked means a Housecall Pro job was created after the lead came in.`, items, count2: ['booked', items.filter((x) => x.b).length],
+      row: (x) => `<div class="di"><div class="nm">${esc(x.n)}${arg ? '' : `<span class="tag">${esc(x.ch)}</span>`}</div><div class="vl"><span class="tag ${x.b ? 'ok' : ''}">${x.b ? 'Booked' : 'Not booked'}</span></div><div class="mt">Came in ${fmtDate(x.d)}. GHL source: ${esc(x.raw)}.</div>${links(null, x.g, 'GHL contact')}</div>` };
+  },
+  waiting() {
+    const items = D.lists.waiting;
+    return { title: 'Waiting on a reply', sub: 'The customer sent the last message in the past 30 days. Opt-outs and one-word replies are left out.', items,
+      row: (x) => `<div class="di"><div class="nm">${esc(x.n)}</div><div class="vl"><span class="tag ${x.age > 3 ? 'warn' : ''}">${x.age < 1 ? 'Today' : x.age + (x.age === 1 ? ' day' : ' days')}</span></div><div class="mt">${esc(x.t)}, ${fmtDate(x.d)}.</div>${links(null, x.u, 'Open conversation')}</div>` };
+  },
+  estimates() {
+    const items = D.lists.estimates;
+    return { title: 'Estimates not yet approved', sub: 'Sent in the last 90 days, with no option approved or declined and no job booked since.', items, total: items.reduce((a, x) => a + x.v, 0), unit: 'in value',
+      row: (x) => `<div class="di"><div class="nm">${esc(x.n)}</div><div class="vl">${fmt$(x.v)}</div><div class="mt">Sent ${fmtDate(x.d)}, ${Math.round((new Date(D.meta.today) - new Date(x.d)) / 864e5)} days ago.</div>${links(x.u, null)}</div>` };
+  },
+  unscheduled() {
+    const items = D.lists.unscheduled;
+    return { title: 'Jobs that need scheduling', sub: 'Created in the last 120 days and still unscheduled in Housecall Pro.', items,
+      row: (x) => `<div class="di"><div class="nm">${esc(x.n)}</div><div class="vl"><span class="tag">${esc(x.t)}</span></div><div class="mt">Created ${fmtDate(x.d)}.</div>${links(x.u, null)}</div>` };
+  },
+  missed(arg) {
+    const cut = arg === '7' ? new Date(Date.now() - 7 * 864e5).toISOString() : '';
+    const items = D.lists.missed.filter((x) => x.t >= cut);
+    return { title: arg === '7' ? 'Missed calls, last 7 days' : `Missed calls, last ${D.meta.messageWindow} days`, sub: 'Calls to the Google Ads, Meta and LSA lines that were missed or went to voicemail.', items,
+      row: (x) => `<div class="di"><div class="nm">${esc(x.n)}</div><div class="vl"><span class="tag warn">${x.k === 'voicemail' ? 'Voicemail' : 'Missed'}</span></div><div class="mt">${new Date(x.t).toLocaleString('en-US', { timeZone: D.meta.tz, weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}.</div>${links(null, x.u, 'GHL contact')}</div>` };
+  },
+  winback() {
+    const items = D.lists.winback;
+    return { title: 'Past customers to win back', sub: 'No job in over 12 months, highest lifetime spend first.', items, total: items.reduce((a, x) => a + x.ltv, 0), unit: 'lifetime spend',
+      row: (x) => `<div class="di"><div class="nm">${esc(x.n)}</div><div class="vl">${fmt$(x.ltv)}</div><div class="mt">Last job ${fmtDate(x.last)} ${x.last.slice(0, 4)}, ${x.jobs} ${x.jobs === 1 ? 'job' : 'jobs'} in total.</div>${links(x.h, null)}</div>` };
+  },
+};
+let DR = null;
+function openDrawer(key, arg) {
+  const L = LISTS[key](arg, range()); DR = L;
+  $('#dTitle').textContent = L.title; $('#dSub').textContent = L.sub; $('#dSearch').value = '';
+  $('#dSum').innerHTML = `<span><b>${fmtN(L.items.length)}</b> ${L.items.length === 1 ? 'record' : 'records'}</span>` + (L.total != null ? `<span><b>${fmt$(L.total)}</b> ${L.unit}</span>` : '') + (L.count2 ? `<span><b>${fmtN(L.count2[1])}</b> ${L.count2[0]}</span>` : '');
+  drawList(); document.body.classList.add('dr'); setTimeout(() => $('#dClose').focus(), 50);
+}
+function drawList() {
+  const q = $('#dSearch').value.trim().toLowerCase();
+  const xs = DR.items.filter((x) => !q || String(x.n).toLowerCase().includes(q));
+  $('#dList').innerHTML = xs.length ? xs.slice(0, 400).map(DR.row).join('') + (xs.length > 400 ? `<p class="dempty">Showing the first 400. Search to narrow down.</p>` : '') : '<p class="dempty">Nothing here for this range.</p>';
+}
+const closeDrawer = () => document.body.classList.remove('dr');
+document.addEventListener('click', (e) => { const t = e.target.closest('[data-open]'); if (t) { e.preventDefault(); const [k, a] = t.dataset.open.split('|'); openDrawer(k, a || ''); } });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDrawer(); if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[data-open]:not(button)')) { e.preventDefault(); e.target.click(); } });
+$('#scrim').onclick = closeDrawer; $('#dClose').onclick = closeDrawer; $('#dSearch').oninput = () => drawList();
 
 // ---------- render ----------
 function render() {
