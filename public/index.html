@@ -87,12 +87,14 @@ tr.tot td:first-child{padding-left:12px;border-radius:10px 0 0 10px}tr.tot td:la
 .lcard .big{font-weight:700;font-size:32px;line-height:1;letter-spacing:-.6px}
 .rank{display:grid;grid-template-columns:40px minmax(0,1fr) 72px 96px;gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line2);font-size:14.5px}
 .rank .p{display:flex;align-items:center;justify-content:center;height:32px;border-radius:9px;background:var(--sky-soft);color:var(--sky-d);font-weight:700;font-size:15px}
+.rank.sd{grid-template-columns:40px minmax(0,1fr) 84px}
 .rank .q{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rank .c{text-align:right;font-size:13px}
 .rank svg{width:96px;height:24px}
 .grp{font-size:13px;font-weight:600;color:var(--muted);margin:16px 0 2px}
 .more{background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 14px;margin-top:12px;cursor:pointer;font-size:14px;font-weight:500}
 .note{font-size:13px;color:var(--muted);margin-top:12px}
+.sitepick{display:flex;gap:8px;margin:0 0 16px;flex-wrap:wrap}.sitepick button{border:1px solid var(--line);background:#fff;border-radius:10px;padding:7px 14px;font-weight:500;cursor:pointer}.sitepick button.on{background:var(--sky);border-color:var(--sky);color:#fff}.sitepick button:disabled{cursor:default;color:var(--muted)}.sitepick em{font-style:normal;font-size:12px;margin-left:4px}
 .row2{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line2);font-size:14.5px}
 .money{background:linear-gradient(135deg,var(--navy),#1d3a5c);color:#fff;border-radius:14px;padding:14px 16px;margin-bottom:12px}
 .money div{display:flex;justify-content:space-between;align-items:baseline;gap:10px}.money span{font-size:13.5px;color:#b9cadb}.money b{font-size:28px;font-weight:700;letter-spacing:-.6px}.money small{display:block;color:#b9cadb;font-size:12.5px;margin-top:4px;line-height:1.4}
@@ -132,6 +134,10 @@ tr.open td:last-child:after{content:"›";color:var(--sky-d);font-weight:700;mar
 .hb.open:hover span{color:var(--sky-d)}
 .stat.open:hover{border-color:var(--sky)}
 .stat .go{font-size:12.5px;color:var(--sky-d);font-weight:600}
+.extrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.extbtn{display:inline-flex;align-items:center;gap:4px;font-size:13.5px;font-weight:600;text-decoration:none;padding:8px 12px;border-radius:10px;border:1px solid var(--line)}
+.extbtn.hcp{background:#fff;color:var(--sky-d);border-color:#bfe3f8}.extbtn.hcp:hover{background:var(--sky-soft)}
+.extbtn.ghl{background:#fff;color:#5b47d6;border-color:#d9d3fb}.extbtn.ghl:hover{background:#f3f1ff}
 .linkbtn{background:var(--sky-soft);color:var(--sky-d);border:0;border-radius:10px;padding:7px 12px;font-size:13.5px;font-weight:600;cursor:pointer}
 .phead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
 #scrim{position:fixed;inset:0;background:rgba(11,22,34,.45);z-index:30;opacity:0;pointer-events:none;transition:opacity .2s}
@@ -181,7 +187,8 @@ body.dr #scrim{opacity:1;pointer-events:auto}body.dr #drawer{transform:none}body
   <button role="tab" data-v="jobs" aria-selected="false">Revenue</button>
   <button role="tab" data-v="mkt" aria-selected="false">Ads &amp; ROI</button>
   <button role="tab" data-v="leads" aria-selected="false">Calls &amp; leads</button>
-  <button role="tab" data-v="google" aria-selected="false">Google &amp; reviews</button>
+  <button role="tab" data-v="google" aria-selected="false">Google listings</button>
+  <button role="tab" data-v="web" aria-selected="false">Website &amp; SEO</button>
   <button role="tab" data-v="cust" aria-selected="false">Customers</button>
 </div></nav>
 <div class="hero"><div class="wrap" id="hero"></div></div>
@@ -191,6 +198,7 @@ body.dr #scrim{opacity:1;pointer-events:auto}body.dr #drawer{transform:none}body
   <section class="view" id="v-jobs"></section>
   <section class="view" id="v-mkt"></section>
   <section class="view" id="v-google"></section>
+  <section class="view" id="v-web"></section>
   <section class="view" id="v-cust"></section>
 </main>
 <footer class="wrap" id="foot"></footer>
@@ -374,7 +382,7 @@ function pulse(rg) {
   if (ly) brief.splice(1, 0, [rev >= ly ? 'good' : 'bad', `Same ${R === 'month' ? 'days' : 'period'} last year: ${fmt$(ly)}, so ${rev >= ly ? 'up' : 'down'} ${pct(Math.abs(rev - ly) / ly)} year over year.`]);
   if (byType[0] && rev) brief.push(['', `${byType[0][0]} work brought in ${pct(byType[0][1] / rev)} of revenue, at ${fmt$(byType[0][1] / (byType[0][2] || 1))} a job.`]);
   const cpn = (D.campaigns || []).find((c) => c.opps);
-  if (cpn) brief.push([cpn.revenue ? 'good' : '', `${cpn.name} campaign: ${fmtN(cpn.opps)} customers in the pipeline, ${fmtN(cpn.booked)} booked, ${fmt$(cpn.revenue)} paid so far.`]);
+  if (cpn) brief.push([cpn.revenue ? 'good' : '', `${cpn.name} campaign: ${fmtN(cpn.opps)} customers texted, ${fmtN(cpn.booked)} tune-ups booked, ${fmt$(cpn.revenue + cpn.followOn)} from those tune-ups and the work found on them.`]);
   if (e.value || w.total) brief.push(['adj', `${fmt$(e.value)} in estimates and ${fmtN(w.total)} customer conversations are waiting on the team.`]);
   const cold = coldLeads(), aj = avgJob90();
   const n = D.days.length, tuAvg = (sum(D.daily.rev['Tune-up'], n - 365, n - 1) / (sum(D.daily.cnt['Tune-up'], n - 365, n - 1) || 1)) || 0;
@@ -405,7 +413,7 @@ function pulse(rg) {
         <li class="open" data-open="unscheduled" tabindex="0" role="button"><b>${D.snapshot.needsScheduling}</b><span>Jobs that still need scheduling<small>Created in the last 120 days.</small></span><em class="go">View ›</em></li>
         ${!D.audit?.callMessages ? '' : `<li class="open" data-open="missed|7" tabindex="0" role="button"><b class="${m7 ? 'hot' : ''}">${fmtN(m7)}</b><span>Missed tracked calls, last 7 days<small>Includes voicemails.</small></span><em class="go">View ›</em></li>`}
         <li class="open" data-open="tuneDue" tabindex="0" role="button"><b>${fmtN(D.lists.tuneDue.length)}</b><span>Customers due for a tune-up<small>Last one 10–14 months ago.</small></span><em class="go">View ›</em></li>
-      </ul></div>
+      </ul>${extRow(ext(`${HCPAPP}/estimates`, 'Estimates in Housecall Pro'), ext(`${HCPAPP}/jobs`, 'Jobs in Housecall Pro'), ext(D.snapshot.link, 'Conversations in GHL', 'ghl'))}</div>
     <div class="panel s6"><h3>Where the revenue came from</h3><p class="sub">${esc(rg.label)}, by how each customer first found the business</p>
       <div class="hbars">${hbar(bySrc, srcColor, bySrc[0]?.[1], (ch) => ch === 'Existing customers' ? null : `credited|${ch}`) || '<p class="sub">No completed jobs in this range.</p>'}</div>
       ${rev ? `<p class="note">${pct(tracked / rev)} came from customers brought in by a tracked source since ${fmtDate(D.marketingStart)}.</p>` : ''}</div>
@@ -510,13 +518,13 @@ function jobsView(rg) {
     <div class="panel s7"><h3>By technician</h3><p class="sub">${esc(rg.label)}. Each job counts for the first tech assigned in Housecall Pro.</p>
       <div class="tbl"><table><thead><tr><th>Technician</th><th>Jobs</th><th>Revenue</th><th>Avg job</th><th>Replacements</th></tr></thead><tbody>
       ${techRows.map((x) => `<tr><td>${esc(x.n)}</td><td>${fmtN(x.c)}</td><td>${fmt$(x.v)}</td><td>${x.c ? fmt$(x.v / x.c) : '—'}</td><td>${fmtN(x.r)}${x.c ? ` <span class="tag">${pct(x.r / x.c)}</span>` : ''}</td></tr>`).join('') || '<tr><td colspan="5">No completed jobs in this range.</td></tr>'}
-      </tbody></table></div></div>
+      </tbody></table></div>${extRow(ext(`${HCPAPP}/jobs`, 'Jobs in Housecall Pro'))}</div>
     <div class="panel s5"><h3>Estimates</h3><p class="sub">Sent ${esc(rg.short.replace(/^over /, ''))}</p>
       <div class="split"><div class="box"><div class="k">Close rate</div><div class="v">${pct(esDecided ? esWon.length / esDecided : null)}</div><small>${fmtN(esWon.length)} won of ${fmtN(esDecided)} decided</small></div>
       <div class="box"><div class="k">Days to book</div><div class="v">${esDays == null ? '—' : Math.round(esDays)}</div><small>median, sent to job booked</small></div></div>
       <div class="row2"><span>Sent</span><b>${fmtN(es.length)}</b></div><div class="row2"><span>Won value</span><b>${fmt$(esWon.reduce((a, x) => a + x[2], 0))}</b></div><div class="row2"><span>Still open</span><b>${fmtN(es.filter((x) => x[1] === 0).length)}</b></div>
-      <button class="linkbtn" data-open="estimates" style="margin-top:12px">See open estimates</button></div>
-    <div class="panel s12"><h3>On the schedule, next 14 days</h3><p class="sub">Jobs booked in Housecall Pro, by day</p>
+      <div class="extrow"><button class="linkbtn" data-open="estimates">See open estimates</button>${ext(`${HCPAPP}/estimates`, 'Estimates in Housecall Pro')}</div></div>
+    <div class="panel s12"><div class="phead"><h3>On the schedule, next 14 days</h3>${ext(HCPAPP, 'Schedule in Housecall Pro')}</div><p class="sub">Jobs booked in Housecall Pro, by day</p>
       ${bars(sch.map((x) => ({ label: new Date(x.d + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' }), parts: [{ v: x.n, c: 'var(--sky)' }] })), { h: 200, w: 900, aria: 'Jobs scheduled next 14 days' })}</div>
   </div>`;
 }
@@ -556,7 +564,8 @@ function mkt(rg) {
   });
   const a = D.attribution, newTot = a.phone + a.email + a.name + a.hcp_field + a.not_captured;
   const who = priced.length < paid.length ? priced.map((r) => r.ch).join(' and ') : 'ads';
-  const head = roi != null && roiRev ? `Customers from ${who} have paid ${fmt$(roiRev)} so far, ${roi.toFixed(1)}× what ${priced.length < paid.length ? 'those ads' : 'the ads'} cost.` : `${fmtN(T.customers)} new customers came from ads.`;
+  const bookedAds = D.lists.leads.filter((x) => D.paid.includes(x.ch) && inR(x.d, rg) && x.b).length;
+  const head = !T.customers && T.leads ? `${fmtN(T.leads)} leads from ads ${rg.short.replace(/^in /, 'in ')}, ${fmtN(bookedAds)} with a job booked so far.` : roi != null && roiRev ? `Customers from ${who} have paid ${fmt$(roiRev)} so far, ${roi.toFixed(1)}× what ${priced.length < paid.length ? 'those ads' : 'the ads'} cost.` : `${fmtN(T.customers)} new customers came from ads.`;
   return `<h2 class="head">${esc(head)}</h2>
   <ul class="brief">
     <li>Revenue is completed jobs in Housecall Pro. Each new customer is matched to the lead that came in before their first job.</li>
@@ -572,7 +581,7 @@ function mkt(rg) {
     ${stat('Return on spend', roi == null ? '—' : roi.toFixed(1) + '×', priced.length < paid.length ? 'LSA left out until entered' : '', null)}
   </div>
   <div class="grid">
-    <div class="panel s12"><div class="phead"><h3>Results by channel</h3><button class="linkbtn" data-open="credited">Check every match</button></div><p class="sub">Click a channel to see each customer, how they were matched, and links to Housecall Pro and GoHighLevel. Leads that came in and customers whose first job was in ${esc(monthSpan(rg))}. Paid so far counts every completed job from those customers.</p>
+    <div class="panel s12"><div class="phead"><h3>Results by channel</h3><div class="extrow" style="margin:0"><button class="linkbtn" data-open="credited">Check every match</button>${ext(`${HCPAPP}/customers`, 'Customers in Housecall Pro')}</div></div><p class="sub">Click a channel to see each customer, how they were matched, and links to Housecall Pro and GoHighLevel. Leads that came in and customers whose first job was in ${esc(monthSpan(rg))}. Paid so far counts every completed job from those customers.</p>
       <div class="tbl"><table><thead><tr><th>Channel</th><th>Spent</th><th>Leads</th><th>Per lead</th><th>New customers</th><th>Per customer</th><th>Paid so far</th><th>Return</th></tr></thead><tbody>
       ${paid.map(row).join('')}
       <tr class="tot"><td>Ads total</td><td>${fmt$(T.s)}</td><td>${fmtN(T.leads)}</td><td>${T.leads && T.s ? fmt$(T.s / T.leads) : '—'}</td><td>${fmtN(T.customers)}</td><td>${T.customers && T.s ? fmt$(T.s / T.customers) : '—'}</td><td>${fmt$(T.revenue)}</td><td>${roi == null ? '—' : roi.toFixed(1) + '×'}</td></tr>
@@ -588,8 +597,8 @@ function mkt(rg) {
       <div class="tbl"><table><thead><tr><th>Month</th>${D.paid.map((ch) => `<th>${esc(ch)}</th>`).join('')}<th>All ads</th></tr></thead><tbody>
       ${cpm.map((r) => `<tr><td>${r.m}</td>${r.cells.map((v) => `<td>${v == null ? '—' : fmt$(v)}</td>`).join('')}<td><b>${r.all == null ? '—' : fmt$(r.all)}</b></td></tr>`).join('')}
       </tbody></table></div></div>
-    ${(D.campaigns || []).filter((c) => c.opps).map((c, i) => `<div class="panel s12"><div class="phead"><h3>Campaign: ${esc(c.name)}</h3><button class="linkbtn" data-open="campaign|${i}">See every customer</button></div><p class="sub">Running since ${c.start ? fmtDate(c.start) : '—'}. Revenue counts Housecall Pro jobs within 90 days of each customer entering the pipeline.</p>
-      <div class="stats" style="margin:0 0 14px"><div class="stat"><div class="k">In the pipeline</div><div class="v">${fmtN(c.opps)}</div></div><div class="stat"><div class="k">Booked a job</div><div class="v">${fmtN(c.booked)}</div><div class="d">${pct(c.booked / (c.opps || 1))} of the pipeline</div></div><div class="stat"><div class="k">Jobs completed</div><div class="v">${fmtN(c.done)}</div></div><div class="stat"><div class="k">Paid so far</div><div class="v">${fmt$(c.revenue)}</div></div><div class="stat"><div class="k">Follow-on repairs and replacements</div><div class="v">${fmt$(c.followOn)}</div></div></div>
+    ${(D.campaigns || []).filter((c) => c.opps).map((c, i) => `<div class="panel s12"><div class="phead"><h3>Campaign: ${esc(c.name)}</h3><button class="linkbtn" data-open="campaign|${i}">See every customer</button></div><p class="sub">Running since ${c.start ? fmtDate(c.start) : '—'}. Credit goes to tune-ups booked within ${c.window} days of each text, plus repairs or replacements found on those tune-ups. Other work from people on the list isn't counted${c.otherWork ? ` (${fmt$(c.otherWork)} in that time)` : ''}.</p>
+      <div class="stats" style="margin:0 0 14px"><div class="stat"><div class="k">Texted</div><div class="v">${fmtN(c.opps)}</div></div><div class="stat"><div class="k">Tune-ups booked</div><div class="v">${fmtN(c.booked)}</div><div class="d">${(c.booked / (c.opps || 1) * 100).toFixed(1)}% of those texted</div></div><div class="stat"><div class="k">Tune-ups done</div><div class="v">${fmtN(c.done)}</div><div class="d">${fmt$(c.revenue)} paid</div></div><div class="stat"><div class="k">Found on those tune-ups</div><div class="v">${fmt$(c.followOn)}</div><div class="d">repairs and replacements</div></div><div class="stat"><div class="k">Campaign total</div><div class="v">${fmt$(c.revenue + c.followOn)}</div></div></div>
       <div class="hbars">${c.stages.map(([st, v]) => `<div class="hb"><span>${esc(st)}</span><div><i style="width:${(v / (c.stages[0][1] || 1) * 100).toFixed(1)}%;background:var(--c3)"></i></div><b>${fmtN(v)}</b></div>`).join('')}</div></div>`).join('')}
     <div class="panel s5"><h3>Where revenue came from</h3><p class="sub">All completed jobs, ${esc(rg.label)}</p>
       <div class="hbars">${hb || '<p class="sub">No completed jobs in this range.</p>'}</div>
@@ -625,11 +634,7 @@ function google(rg) {
   return `<h2 class="head">${esc(head)}</h2>
   <ul class="brief"><li>${(() => { const rv = L.reduce((a, l) => a + S(l.reviews, rg), 0); return jobsR ? `${fmtN(rv)} new reviews on ${fmtN(jobsR)} completed jobs, about ${(rv / jobsR * 100).toFixed(1)} per 100 jobs. Strong shops ask every customer and land 15 to 25.` : ''; })()}</li><li>Each listing is counted on its own. Google reports these with a delay of about ${D.meta.gbpLag} days, so the most recent days fill in later.</li></ul>
   <div class="lst">${cards}</div>
-  <div class="grid" style="margin-top:18px">
-    <div class="panel s12"><h3>Website search rankings</h3><p class="sub">Average position on Google for the most-searched non-brand terms. Change is over the last 4 weeks. These are website results, not the map listings.</p>
-      ${rl || '<p class="sub">No ranking data yet.</p>'}
-      ${rk.length > 6 ? `<button class="more" id="rkMore">${showAll ? 'Show top 6' : `Show all ${rk.length}`}</button>` : ''}</div>
-  </div>`;
+`;
 }
 
 function cust(rg) {
@@ -658,7 +663,7 @@ function cust(rg) {
       ${ltv.map((x) => `<tr class="open" data-open="credited|${esc(x.ch)}" tabindex="0"><td>${esc(x.ch)}</td><td>${fmtN(x.n)}</td><td>${fmt$(x.avg)}</td><td>${pct(x.rep)}</td><td>${fmt$(x.top)}</td></tr>`).join('')}
       </tbody></table></div>
       <p class="note">The list covers all ranges, since value builds over time. Click a source to see each customer.</p></div>
-    <div class="panel s4"><h3>Past customers by last visit</h3><p class="sub">Right now</p>
+    <div class="panel s4"><div class="phead"><h3>Past customers by last visit</h3>${ext(`${HCPAPP}/customers`, 'Housecall Pro')}</div><p class="sub">Right now</p>
       <ul class="todo">
         <li class="open" data-open="tuneDue" tabindex="0" role="button"><b class="hot">${fmtN(D.lists.tuneDue.length)}</b><span>Due for a tune-up now<small>Last tune-up 10–14 months ago.</small></span><em class="go">View ›</em></li>
         <li class="open" data-open="winback" tabindex="0" role="button"><b>${fmtN(c.winback12)}</b><span>Last job 12–24 months ago<small>Most likely to rebook a tune-up.</small></span><em class="go">View ›</em></li>
@@ -672,7 +677,10 @@ function cust(rg) {
 const inR = (d, rg) => d >= D.days[rg.i0] && d <= D.days[rg.i1];
 const inMonths = (d, rg) => rg.months.includes(d.slice(0, 7));
 const VIA = { phone: 'matched by phone', email: 'matched by email', name: 'matched by name', hcp_field: 'from the Housecall Pro lead source', not_captured: 'no source found' };
-const links = (h, g, gl = 'GoHighLevel') => `<div class="ln">${h ? `<a class="hcp" href="${h}" target="_blank" rel="noopener">Housecall Pro ↗</a>` : ''}${g ? `<a class="ghl" href="${g}" target="_blank" rel="noopener">${gl} ↗</a>` : ''}</div>`;
+const HCPAPP = 'https://pro.housecallpro.com/app';
+const ext = (url, label, kind = 'hcp') => url ? `<a class="extbtn ${kind}" href="${url}" target="_blank" rel="noopener">${esc(label)} ↗</a>` : '';
+const extRow = (...b) => `<div class="extrow">${b.join('')}</div>`;
+const links = (h, g, gl = 'GoHighLevel') => `<div class="ln">${h ? `<a class="hcp" href="${h}" target="_blank" rel="noopener">Open in Housecall Pro ↗</a>` : ''}${g ? `<a class="ghl" href="${g}" target="_blank" rel="noopener">${gl} ↗</a>` : ''}</div>`;
 const LISTS = {
   credited(arg, rg) {
     const items = D.lists.credited.filter((x) => inMonths(x.first, rg) && (!arg || x.src === arg));
@@ -683,7 +691,7 @@ const LISTS = {
   leads(arg, rg) {
     const items = D.lists.leads.filter((x) => inR(x.d, rg) && (!arg || x.ch === arg));
     return { title: arg ? `Leads from ${arg}` : 'New leads', sub: `${rg.label}. Booked means a Housecall Pro job was created after the lead came in.`, items, count2: ['booked', items.filter((x) => x.b).length],
-      row: (x) => `<div class="di"><div class="nm">${esc(x.n)}${arg ? '' : `<span class="tag">${esc(x.ch)}</span>`}</div><div class="vl"><span class="tag ${x.b ? 'ok' : ''}">${x.b ? 'Booked' : 'Not booked'}</span></div><div class="mt">Came in ${fmtDate(x.d)}. GHL source: ${esc(x.raw)}.</div>${links(null, x.g, 'GHL contact')}</div>` };
+      row: (x) => `<div class="di"><div class="nm">${esc(x.n)}${arg ? '' : `<span class="tag">${esc(x.ch)}</span>`}</div><div class="vl"><span class="tag ${x.b ? 'ok' : ''}">${x.b ? 'Booked' : 'Not booked'}</span></div><div class="mt">Came in ${fmtDate(x.d)}. GHL source: ${esc(x.raw)}.</div>${links(x.h, x.g, 'GHL contact')}</div>` };
   },
   waiting() {
     const items = D.lists.waiting;
@@ -718,7 +726,7 @@ const LISTS = {
   },
   campaign(arg) {
     const c = D.campaigns[+arg || 0]; const items = c.list;
-    return { title: c.name, sub: `Opportunities in the campaign pipeline. Booked and paid count Housecall Pro jobs within 90 days of each opportunity.`, items, total: c.revenue, unit: 'paid', count2: ['booked', c.booked],
+    return { title: c.name, sub: `Everyone texted in the campaign. Booked means a tune-up was booked after the text; paid counts that tune-up and any repair or replacement found on it.`, items, total: c.revenue, unit: 'paid', count2: ['booked', c.booked],
       row: (x) => `<div class="di"><div class="nm">${esc(x.n)}<span class="tag">${esc(x.st)}</span></div><div class="vl">${x.rv ? fmt$(x.rv) : `<span class="tag ${x.b ? 'ok' : ''}">${x.b ? 'Booked' : 'Not booked'}</span>`}</div><div class="mt">Added ${fmtDate(x.d)}.</div>${links(x.h, x.g, 'GHL contact')}</div>` };
   },
   winback() {
@@ -744,10 +752,56 @@ document.addEventListener('click', (e) => { const t = e.target.closest('[data-op
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDrawer(); if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[data-open]:not(button)')) { e.preventDefault(); e.target.click(); } });
 $('#scrim').onclick = closeDrawer; $('#dClose').onclick = closeDrawer; $('#dSearch').oninput = () => drawList();
 
+
+let siteIx = 0, showAllRk = false;
+function web(rg) {
+  const S2 = (D.sites || []), st = S2[siteIx] || S2[0];
+  const picker = S2.length > 1 ? `<div class="sitepick">${S2.map((x, i) => `<button class="${i === siteIx ? 'on' : ''}" data-site="${i}"${x.pending ? ' disabled' : ''}>${esc(x.name)}${x.pending ? ' <em>connecting</em>' : ''}</button>`).join('')}</div>` : '';
+  if (!st || st.pending || !st.clicks) return `<h2 class="head">${esc(st ? st.name : 'Website')} search data is being connected.</h2><ul class="brief"><li>Once Search Console access is added, clicks, rankings and top pages for this site appear here.</li></ul>${picker}`;
+  const c = S(st.clicks, rg), cP = S(st.clicks, rg, true), im = S(st.impr, rg), imP = S(st.impr, rg, true);
+  const pos = im ? S(st.posW, rg) / im : null, posP = imP ? S(st.posW, rg, true) / imP : null;
+  const ctr = im ? c / im : null;
+  const page1 = st.rankings.filter((x) => x.pos <= 10).length;
+  const mo = (() => { const o = {}; D.days.forEach((d, i) => { const m = d.slice(0, 7); o[m] = (o[m] || 0) + st.clicks[i]; }); return monthsIn(D.days[Math.max(0, D.days.length - 365)], D.meta.today).map((m) => ({ m, v: o[m] || 0 })); })();
+  const chg = (x) => x.pos == null || x.prev == null ? '<span class="pill n">new</span>' : x.prev - x.pos >= 1 ? `<span class="pill up">▲ ${Math.round(x.prev - x.pos)}</span>` : x.pos - x.prev >= 1 ? `<span class="pill down">▼ ${Math.round(x.pos - x.prev)}</span>` : '<span class="pill n">steady</span>';
+  const tbl = (rows, label) => `<div class="tbl"><table><thead><tr><th>${label}</th><th>Times shown</th><th>Clicks</th><th>Avg position</th><th>4 weeks</th></tr></thead><tbody>${rows.map((x) => `<tr><td>${esc(x.n)}</td><td>${fmtN(x.impr)}</td><td>${fmtN(x.clicks)}</td><td>${x.pos ?? '—'}</td><td>${chg(x)}</td></tr>`).join('') || `<tr><td colspan="5">No searches yet.</td></tr>`}</tbody></table></div>`;
+  const rk = st.rankings, shown = showAllRk ? rk : rk.slice(0, 8);
+  const grp = [['Page one', (p) => p <= 10], ['Page two', (p) => p > 10 && p <= 20], ['Further back', (p) => p > 20]];
+  const rl = grp.map(([g, f]) => { const xs = shown.filter((x) => f(x.pos)).sort((a, b) => a.pos - b.pos); return xs.length ? `<div class="grp">${g}</div>` + xs.map((x) => `<div class="rank"><span class="p">${Math.round(x.pos)}</span><span class="q" title="${esc(x.query)}">${esc(x.query)}</span><span class="c">${x.change == null ? '' : x.change >= 1 ? `<span class="pill up">▲ ${Math.round(x.change)}</span>` : x.change <= -1 ? `<span class="pill down">▼ ${Math.round(-x.change)}</span>` : '<span class="pill n">steady</span>'}</span>${spark(x.series, 'var(--steel)', true)}</div>`).join('') : ''; }).join('');
+  const nb = st.nonBrand, br = st.brand;
+  const head = `${fmtN(c)} visits from Google search ${rg.short}.`;
+  return `<h2 class="head">${esc(head)}</h2>
+  <ul class="brief">
+    <li>${esc(st.name)} was shown ${fmtN(im)} times in Google search results, and ${pct(ctr)} of those turned into a visit.</li>
+    <li>In the last 4 weeks, ${pct(br.clicks / ((br.clicks + nb.clicks) || 1))} of visits came from people already searching the company name. Non-brand searches like "furnace repair" are how new customers find the site.</li>
+    ${st.striking.length ? `<li class="adj">${st.striking.length} searches sit on page two, positions 8 to 20. These are the closest to page one and new calls.</li>` : ''}
+  </ul>
+  <div class="stats">
+    ${stat('Visits from search', fmtN(c), delta(c, cP, rg), last8w(st.clicks), 'var(--sky)')}
+    ${stat('Times shown', fmtN(im), delta(im, imP, rg), last8w(st.impr))}
+    ${stat('Click rate', pct(ctr), 'visits per time shown', null)}
+    ${stat('Average position', pos == null ? '—' : pos.toFixed(1), posP != null && rg.vs ? `${pos < posP ? '<span class="up">▲ better</span>' : pos > posP ? '<span class="down">▼ lower</span>' : 'steady'} ${rg.vs}` : 'lower is better', null)}
+    ${stat('Page-one searches', fmtN(page1), `of the top ${rk.length} non-brand`, null)}
+  </div>
+  ${picker}
+  <div class="grid">
+    <div class="panel s8"><h3>Visits from Google search by month</h3><p class="sub">${esc(st.name)}. The current month is to date.</p>
+      ${bars(mo.map((x, i) => ({ label: mTick(x.m, i), parts: [{ v: x.v, c: 'var(--sky)' }], faded: i === mo.length - 1 })), { aria: 'Search visits by month' })}</div>
+    <div class="panel s4"><h3>Closest to page one</h3><p class="sub">Last 4 weeks, positions 8 to 20, most searched first</p>
+      ${st.striking.slice(0, 8).map((x) => `<div class="rank sd"><span class="p">${Math.round(x.pos)}</span><span class="q" title="${esc(x.q)}">${esc(x.q)}</span><span class="c">${fmtN(x.impr)} views</span></div>`).join('') || '<p class="sub">Nothing between positions 8 and 20 right now.</p>'}</div>
+    <div class="panel s6"><h3>By type of search</h3><p class="sub">Non-brand searches, last 4 weeks, compared with the 4 before</p>${tbl(st.topics, 'Topic')}</div>
+    <div class="panel s6"><h3>By town</h3><p class="sub">Searches that name a service-area town, last 4 weeks</p>${tbl(st.towns, 'Town')}</div>
+    <div class="panel s7"><h3>Top non-brand searches</h3><p class="sub">Average position by week. Change is over the last 4 weeks. These are website results, not the map listings.</p>
+      ${rl || '<p class="sub">No ranking data yet.</p>'}${rk.length > 8 ? `<button class="more" id="rkMore2">${showAllRk ? 'Show top 8' : `Show all ${rk.length}`}</button>` : ''}</div>
+    <div class="panel s5"><h3>Pages people land on</h3><p class="sub">Last 90 days</p>
+      <div class="tbl"><table><thead><tr><th>Page</th><th>Clicks</th><th>Shown</th></tr></thead><tbody>${st.pages.map((x) => `<tr><td style="max-width:220px;overflow:hidden;text-overflow:ellipsis">${esc(x.u)}</td><td>${fmtN(x.clicks)}</td><td>${fmtN(x.impr)}</td></tr>`).join('')}</tbody></table></div></div>
+  </div>`;
+}
+
 // ---------- render ----------
 function render() {
   const rg = range();
-  const map = { pulse, leads, jobs: jobsView, mkt, google, cust };
+  const map = { pulse, leads, jobs: jobsView, mkt, google, web, cust };
   const html = map[V](rg); let cut = html.indexOf('<div class="stats">'); if (cut < 0) { const b = html.indexOf('</ul>'); cut = b > 0 ? b + 5 : -1; }
   let top = cut > 0 ? html.slice(0, cut) : html, rest = cut > 0 ? html.slice(cut) : '';
   // two-tone headline: first sentence white, the rest sky blue (as on the website)
@@ -755,6 +809,8 @@ function render() {
   $('#hero').innerHTML = `<p class="period">${esc(rg.label)}${rg.vs ? `, compared ${esc(rg.vs.replace(/^vs /, 'with '))}` : ''}</p>` + top;
   $('#v-' + V).innerHTML = rest;
   const b = $('#rkMore'); if (b) b.onclick = () => { showAll = !showAll; render(); };
+  const b2 = $('#rkMore2'); if (b2) b2.onclick = () => { showAllRk = !showAllRk; render(); };
+  document.querySelectorAll('[data-site]').forEach((x) => x.onclick = () => { siteIx = +x.dataset.site; render(); });
 }
 function start() {
   $('#gate').style.display = 'none';
