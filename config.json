@@ -3,7 +3,7 @@
   "timezone": "America/Chicago",
   "ads_active": true,
   "routing_fix_date": "2026-09-18",
-  "history_start": "2025-09-01",
+  "history_start": "2024-09-01",
   "marketing_start": "2026-04-01",
   "hcp": {
     "base": "https://api.housecallpro.com",
@@ -93,5 +93,16 @@
       "name": "Repair",
       "match": "repair|service call|diagnos|no heat|no cool|not (heating|cooling)|leak|emergency|trouble"
     }
+  ],
+  "campaigns": [
+    {
+      "name": "Fall tune-up",
+      "pipeline": "tune",
+      "window_days": 90
+    }
+  ],
+  "answering_hours": [
+    8,
+    20
   ]
 }
