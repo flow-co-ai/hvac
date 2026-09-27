@@ -54,9 +54,8 @@
         "name": "qualityhvac365.com"
       },
       {
-        "id": "sc-domain:fibid.com",
-        "name": "fibid.com",
-        "pending": true
+        "id": "https://fibid.com/",
+        "name": "fibid.com"
       }
     ],
     "towns": "crestwood|orland park|homer glen|burr ridge|frankfort|oak forest|midlothian|alsip|palos|tinley park|oak lawn|worth|mokena|lockport|lemont|chicago ridge|hickory hills|oak brook|hinsdale|willowbrook|darien|downers grove|new lenox|blue island|evergreen park",
