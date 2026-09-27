@@ -4,6 +4,7 @@
   "ads_active": true,
   "routing_fix_date": "2026-09-18",
   "history_start": "2025-09-01",
+  "marketing_start": "2026-04-01",
   "hcp": {
     "base": "https://api.housecallpro.com",
     "amounts_in_cents": true
