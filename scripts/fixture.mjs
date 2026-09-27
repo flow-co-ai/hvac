@@ -2,6 +2,8 @@
 import { config, addDays, dayRange } from './lib.mjs';
 
 let seed = 7;
+const FN = ['Maria', 'James', 'Ahmad', 'Linda', 'Tomasz', 'Keisha', 'Robert', 'Sana', 'Daniel', 'Patricia', 'Omar', 'Emily', 'Kevin', 'Grace', 'Luis', 'Nadia'];
+const LN = ['Kowalski', 'Nguyen', 'Haddad', 'Sullivan', 'Patel', 'Rivera', 'Brennan', 'Okafor', 'Schmidt', 'Moreno', 'Walsh', 'Kim'];
 const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
 const pick = (a) => a[Math.floor(rnd() * a.length)];
 const iso = (day, h = 9 + Math.floor(rnd() * 10), m = Math.floor(rnd() * 60)) => new Date(`${day}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00-05:00`).toISOString();
@@ -14,7 +16,7 @@ export function makeFixture(today) {
   let n = 0;
   const newCustomer = (day) => {
     n++;
-    const c = { id: `cus_${n}`, mobile_number: `70855${String(10000 + n).slice(-5)}`, email: `fake${n}@example.test` };
+    const c = { id: `cus_${n}`, first_name: FN[n % FN.length], last_name: LN[(n * 7) % LN.length], mobile_number: `70855${String(10000 + n).slice(-5)}`, email: `fake${n}@example.test` };
     customers.push({ ...c, since: day });
     return c;
   };
@@ -33,7 +35,7 @@ export function makeFixture(today) {
     for (let i = 0; i < leads; i++) {
       const src = pick(srcs);
       const c = newCustomer(d);
-      contacts.push({ id: `ct_${c.id}`, dateAdded: iso(d), phone: '+1' + c.mobile_number, email: c.email, source: src, tags: src.includes('sync') ? ['hcp'] : [] });
+      contacts.push({ id: `ct_${c.id}`, firstName: c.first_name, lastName: c.last_name, dateAdded: iso(d), phone: '+1' + c.mobile_number, email: c.email, source: src, tags: src.includes('sync') ? ['hcp'] : [] });
       if (rnd() < 0.55) {
         const jd = addDays(d, Math.floor(rnd() * 6));
         if (jd <= today) {
@@ -56,13 +58,14 @@ export function makeFixture(today) {
   }
   for (let i = 1; i < 14; i++) for (let k = 0; k < 3 + Math.floor(rnd() * 5); k++) jobs.push(job(pick(customers), pick(types), addDays(today, i), today));
   for (let i = 0; i < 14; i++) estimates.push({ id: `est_${i}`, created_at: iso(addDays(today, -Math.floor(rnd() * 60))), options: [{ total_amount: Math.round(6000 + rnd() * 7000) * 100, approval_status: null }] });
-  for (let i = 0; i < 9; i++) conversations.push({ id: `cvw_${i}`, contactId: 'x', lastMessageDate: iso(addDays(today, -Math.floor(rnd() * 6))), lastMessageDirection: 'inbound' });
+  for (let i = 0; i < 9; i++) conversations.push({ id: `cvw_${i}`, contactId: 'x', fullName: `${FN[i]} ${LN[i]}`, lastMessageType: i % 3 ? 'TYPE_SMS' : 'TYPE_CALL', lastMessageBody: i === 4 ? 'STOP' : 'Can someone call me back', lastMessageDate: iso(addDays(today, -Math.floor(rnd() * 6))), lastMessageDirection: 'inbound' });
 
   // Windsor-shaped rows
   const gads = [], meta = [], metaTotal = [], gbp = {}, reviews = {}, totals = {}, sc = [];
   for (const d of days) {
     const k = season(d);
     if (d >= '2026-04-01') {
+      gads.push({ date: d, campaign: 'LocalServicesCampaign:SystemGenerated:abc', spend: 25, clicks: 2, impressions: 50, conversions: 0.3 });
       gads.push({ date: d, campaign: 'Heating - Exact', spend: +(40 * k * (0.6 + rnd())).toFixed(2), clicks: Math.round(4 * k * rnd()), impressions: 200 });
       const ms = +(18 * k * (0.6 + rnd())).toFixed(2);
       meta.push({ date: d, campaign: 'Financing kinetic', spend: ms, clicks: Math.round(12 * rnd()), impressions: 900 });
@@ -87,7 +90,7 @@ function job(c, t, day, today) {
   const future = day > addDays(today, -1);
   const done = !future && rnd() < 0.93;
   return {
-    id: `job_${jn}`, customer: { id: c.id, mobile_number: c.mobile_number, email: c.email },
+    id: `job_${jn}`, customer: { id: c.id, first_name: c.first_name, last_name: c.last_name, mobile_number: c.mobile_number, email: c.email },
     description: t[1], work_status: future ? 'scheduled' : done ? 'complete rated' : rnd() < 0.5 ? 'pro canceled' : 'needs scheduling',
     created_at: iso(addDays(day, -Math.floor(rnd() * 3))), schedule: { scheduled_start: iso(day), scheduled_end: iso(day, 17) },
     work_timestamps: { completed_at: done ? iso(day, 16) : null },

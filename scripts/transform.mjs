@@ -9,9 +9,14 @@ const num = (x) => (x == null || x === '' ? 0 : Number(x) || 0);
 const med = (a) => { if (!a.length) return null; const s = [...a].sort((x, y) => x - y); const m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
 
 // ---------- helpers ----------
+function rawSource(c) {
+  const a = c.attributionSource || {};
+  return (c._oppSources || [])[0] || c.source || a.utmSource || a.medium || a.sessionSource || (c.tags || []).slice(0, 3).join(', ') || '(blank)';
+}
 function contactChannel(c) {
   const a = c.attributionSource || {}; const b = c.lastAttributionSource || {};
-  const hay = [c.source, ...(c.tags || []), a.medium, a.utmSource, a.utmMedium, a.sessionSource, a.campaign, a.utmCampaign, a.referrer, a.gclid ? 'gclid' : '', a.fbclid ? 'facebook' : '', b.medium, b.utmSource, b.sessionSource].filter(Boolean).join(' | ').toLowerCase();
+  const cf = (c.customFields || c.customField || []).map((f) => f.value ?? f.field_value).filter((v) => typeof v === 'string' && v.length <= 40);
+  const hay = [...(c._oppSources || []), c.source, ...cf, ...(c.tags || []), a.medium, a.utmSource, a.utmMedium, a.sessionSource, a.campaign, a.utmCampaign, a.referrer, a.gclid ? 'gclid' : '', a.fbclid ? 'facebook' : '', b.medium, b.utmSource, b.sessionSource].filter(Boolean).join(' | ').toLowerCase();
   for (const ch of CH) if (ch.re.test(hay)) return ch.name;
   return 'Source not captured';
 }
@@ -24,8 +29,12 @@ const isCancel = (j) => /cancel/.test(status(j));
 const doneAt = (j) => j.work_timestamps?.completed_at || j.schedule?.scheduled_end || j.updated_at || j.created_at;
 function customerKeys(c = {}) {
   const ph = [c.mobile_number, c.home_number, c.work_number, c.phone].map(phone10).filter(Boolean);
-  return { ph, em: email(c.email) };
+  return { ph, em: email(c.email), nm: nameKey(c.first_name, c.last_name) };
 }
+const nameKey = (f, l) => { const k = `${f || ''} ${l || ''}`.toLowerCase().replace(/[^a-z ]/g, '').replace(/\s+/g, ' ').trim(); return k.includes(' ') ? k : null; };
+const hcpName = (c = {}) => [c.first_name, c.last_name].filter(Boolean).join(' ') || c.company || 'Customer';
+const ghlName = (c = {}) => c.contactName || [c.firstName, c.lastName].filter(Boolean).join(' ') || c.companyName || 'Contact';
+const HCP = 'https://pro.housecallpro.com/app';
 
 export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
   const tz = config.timezone;
@@ -41,7 +50,7 @@ export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
   const byCust = new Map();
   for (const j of jobs) {
     const cid = j.customer?.id || j.customer_id; if (!cid) continue;
-    if (!byCust.has(cid)) byCust.set(cid, { id: cid, jobs: [], keys: customerKeys(j.customer) });
+    if (!byCust.has(cid)) byCust.set(cid, { id: cid, jobs: [], keys: customerKeys(j.customer), name: hcpName(j.customer) });
     byCust.get(cid).jobs.push(j);
   }
   const rev = { total: zeros() }; const cnt = { total: zeros() };
@@ -57,6 +66,7 @@ export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
   }
 
   // repeat / pull-through / win-back
+  const winList = [];
   let withJob = 0, repeat = 0, tune = 0, tuneConv = 0, tuneConvRev = 0, wb12 = 0, wb24 = 0;
   for (const c of byCust.values()) {
     if (!c.done.length) continue;
@@ -64,27 +74,37 @@ export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
     const last = c.done[c.done.length - 1].day;
     const age = daysBetween(last, today);
     if (age >= 365 && age < 730) wb12++; else if (age >= 730) wb24++;
+    if (age >= 365) winList.push({ n: c.name, last: last, ltv: Math.round(c.done.reduce((x, d) => x + d.amt, 0)), jobs: c.done.length, h: `${HCP}/customers/${c.id}` });
     for (const t of c.done.filter((d) => d.type === 'Tune-up' && daysBetween(d.day, today) >= 30)) {
       tune++;
       const hit = c.done.find((d) => (d.type === 'Repair' || d.type === 'Replacement') && d.day > t.day && daysBetween(t.day, d.day) <= 120);
       if (hit) { tuneConv++; tuneConvRev += hit.amt; }
     }
   }
-  const needsScheduling = (hcp.jobs || []).filter((j) => /needs scheduling|unscheduled/.test(status(j))).length;
+  
   const schedule = dayRange(today, addDays(today, 13)).map((d) => ({ d, n: 0 }));
   const sIdx = Object.fromEntries(schedule.map((s, i) => [s.d, i]));
   for (const j of jobs) { const d = localDay(j.schedule?.scheduled_start); if (d in sIdx && !isDone(j)) schedule[sIdx[d]].n++; }
 
   // open estimates
-  let estOpen = 0, estValue = 0, estAged = 0;
+  // open estimate: sent in the last 90 days, no option approved or declined, not cancelled,
+  // and no job booked for that customer after it (a booked job means it was won another way)
+  let estOpen = 0, estValue = 0, estAged = 0; const estList = [];
   for (const e of hcp.estimates || []) {
     const opts = e.options || [];
     const st = opts.map((o) => String(o.approval_status || o.status || '').toLowerCase());
-    if (st.some((s) => /approved/.test(s)) || (st.length && st.every((s) => /declin/.test(s)))) continue;
-    const created = localDay(e.created_at); if (!created || daysBetween(created, today) > 180) continue;
-    estOpen++; estValue += Math.max(0, ...opts.map((o) => amount(o.total_amount)));
-    if (daysBetween(created, today) > 30) estAged++;
+    if (/cancel|complete|lost|archiv|declin/.test(String(e.work_status || e.status || '').toLowerCase())) continue;
+    if (st.some((x) => /approved|declin|expired/.test(x))) continue;
+    const created = localDay(e.created_at); if (!created || daysBetween(created, today) > 90) continue;
+    const cid = e.customer?.id || e.customer_id; const cust = cid && byCust.get(cid);
+    if (cust && cust.created.some((d) => d > created)) continue;
+    const v = Math.max(0, ...opts.map((o) => amount(o.total_amount)));
+    estOpen++; estValue += v; if (daysBetween(created, today) > 30) estAged++;
+    estList.push({ n: cust?.name || hcpName(e.customer), d: created, v: Math.round(v), u: `${HCP}/estimates/${e.id}` });
   }
+  estList.sort((a, b) => b.v - a.v);
+  const unsched = (hcp.jobs || []).filter((j) => /needs scheduling|unscheduled/.test(status(j)) && daysBetween(localDay(j.created_at) || today, today) <= 120)
+    .map((j) => ({ n: hcpName(j.customer), d: localDay(j.created_at), t: jobType(j), u: `${HCP}/jobs/${j.id}` })).sort((a, b) => (a.d < b.d ? 1 : -1));
 
   // ======================= GHL: leads & attribution =======================
   const phoneIdx = new Map(), emailIdx = new Map();
@@ -92,6 +112,11 @@ export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
   const leadsDaily = Object.fromEntries(LEAD_CHANNELS.map((n) => [n, zeros()]));
   const cohorts = {}; // lead month -> channel -> {leads}
   const cell = (m, ch) => ((cohorts[m] ||= {})[ch] ||= { leads: 0 });
+  const opp = new Map();
+  for (const o of ghl.opportunities || []) { const k = o.contactId || o.contact?.id; if (k && o.source) (opp.get(k) || opp.set(k, []).get(k)).push(o.source); }
+  for (const c of ghl.contacts || []) c._oppSources = opp.get(c.id) || [];
+  const leadList = [];
+  const gLink = (id) => (ghl.locationId && id ? `${config.ghl.app_base}/v2/location/${ghl.locationId}/contacts/detail/${id}` : null);
   let existingInCrm = 0, syncExcluded = 0;
   const contactCh = new Map();
   const leadDayByContact = new Map();
@@ -106,6 +131,7 @@ export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
     if (cust && ((cust.created[0] && cust.created[0] < leadDay) || (firstDone.get(cid) && firstDone.get(cid) < leadDay))) { existingInCrm++; continue; }
     if (ch === 'Text campaign') continue; // replies from past-customer texting are not new demand
     put(leadsDaily[ch], leadDay); leadDayByContact.set(c.id, leadDay);
+    if (daysBetween(leadDay, today) <= 400) leadList.push({ n: ghlName(c), d: leadDay, ch, raw: rawSource(c).slice(0, 40), g: gLink(c.id), b: !!(cust && cust.created.some((d) => d >= leadDay)) });
     cell(month(leadDay), ch).leads++;
   }
 
@@ -114,42 +140,54 @@ export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
   // earliest matching GHL contact that existed before their first HCP job (within a year),
   // then from the HCP lead source field, else "Source not captured". Customers whose first
   // job predates the marketing program are "Existing customers".
-  const gByPhone = new Map(), gByEmail = new Map();
+  const gByPhone = new Map(), gByEmail = new Map(), gByName = new Map();
   const add = (m, k, c) => { if (!k) return; (m.get(k) || m.set(k, []).get(k)).push(c); };
+  const rawCount = new Map();
   for (const c of ghl.contacts || []) {
     const ch = contactChannel(c); if (CH.find((x) => x.name === ch)?.exclude) continue;
     const d = localDay(c.dateAdded || c.dateCreated); if (!d) continue;
-    const o = { d, ch }; add(gByPhone, phone10(c.phone), o); add(gByEmail, email(c.email), o);
+    const raw = rawSource(c).slice(0, 40); rawCount.set(raw, (rawCount.get(raw) || 0) + 1);
+    const o = { d, ch, raw, id: c.id, n: ghlName(c) };
+    add(gByPhone, phone10(c.phone), o); add(gByEmail, email(c.email), o); add(gByName, nameKey(c.firstName, c.lastName) || nameKey(...String(c.contactName || '').split(' ')), o);
     for (const p of c.additionalPhones || []) add(gByPhone, phone10(p.phone || p), o);
   }
+  // names only count when they point to exactly one HCP customer
+  const hcpNameCount = new Map(); for (const c of byCust.values()) if (c.keys.nm) hcpNameCount.set(c.keys.nm, (hcpNameCount.get(c.keys.nm) || 0) + 1);
   const hcpChannel = (src) => { if (!src) return null; for (const ch of CH) if (!ch.exclude && ch.re.test(String(src))) return ch.name; return null; };
   const SOURCES = [...LEAD_CHANNELS, 'Existing customers'];
   const revBy = Object.fromEntries(SOURCES.map((n) => [n, zeros()]));
   const newBy = Object.fromEntries(SOURCES.map((n) => [n, zeros()]));
   const custCohorts = {}; // first-job month -> source -> {customers, jobs, revenue}
-  const how = { ghl_phone: 0, ghl_email: 0, hcp_field: 0, not_captured: 0, existing: 0 };
+  const how = { phone: 0, email: 0, name: 0, hcp_field: 0, not_captured: 0, existing: 0 };
+  const credited = [];
   const start = config.marketing_start || from;
   for (const c of byCust.values()) {
     if (!c.done.length) continue;
     const firstJob = [c.created[0], c.done[0].day].filter(Boolean).sort()[0];
-    let src = null, via = null;
+    let src = null, via = null, hit = null;
     if (c.done[0].day < start) { src = 'Existing customers'; via = 'existing'; }
     else {
-      const pick = (arr) => (arr || []).filter((o) => o.d <= firstJob && daysBetween(o.d, firstJob) <= 365).sort((a, b) => (a.d < b.d ? -1 : 1))[0];
-      let hit = null;
-      for (const p of c.keys.ph) { const h = pick(gByPhone.get(p)); if (h && (!hit || h.d < hit.d)) { hit = h; via = 'ghl_phone'; } }
-      if (!hit) { const h = pick(gByEmail.get(c.keys.em)); if (h) { hit = h; via = 'ghl_email'; } }
-      if (hit && hit.ch !== 'Source not captured' && hit.ch !== 'Text campaign') src = hit.ch;
+      const ok = (o) => o.d <= firstJob && daysBetween(o.d, firstJob) <= 365;
+      const cands = [];
+      for (const p of c.keys.ph) for (const o of gByPhone.get(p) || []) if (ok(o)) cands.push([o, 'phone']);
+      for (const o of gByEmail.get(c.keys.em) || []) if (ok(o)) cands.push([o, 'email']);
+      if (c.keys.nm && hcpNameCount.get(c.keys.nm) === 1) { const g = (gByName.get(c.keys.nm) || []).filter(ok); if (g.length && new Set(g.map((o) => o.id)).size === 1) cands.push([g[0], 'name']); }
+      // prefer a contact with a real source, then the earliest
+      cands.sort((a, b) => ((a[0].ch === 'Source not captured') - (b[0].ch === 'Source not captured')) || (a[0].d < b[0].d ? -1 : 1));
+      if (cands.length) { [hit, via] = cands[0]; if (hit.ch !== 'Source not captured' && hit.ch !== 'Text campaign') src = hit.ch; }
       if (!src) { const f = hcpChannel(c.jobs.map((j) => j.lead_source || j.customer?.lead_source).find(Boolean)); if (f && f !== 'Text campaign') { src = f; via = 'hcp_field'; } }
-      if (!src) { src = 'Source not captured'; via = 'not_captured'; }
+      if (!src) { src = 'Source not captured'; via = hit ? via : 'not_captured'; }
     }
-    how[via]++;
+    how[src === 'Source not captured' ? 'not_captured' : via]++;
     put(newBy[src], c.done[0].day);
     const k = ((custCohorts[month(c.done[0].day)] ||= {})[src] ||= { customers: 0, jobs: 0, revenue: 0 });
     k.customers++;
-    for (const d of c.done) { put(revBy[src], d.day, d.amt); k.jobs++; k.revenue += d.amt; }
+    let total = 0;
+    for (const d of c.done) { put(revBy[src], d.day, d.amt); k.jobs++; k.revenue += d.amt; total += d.amt; }
+    if (src !== 'Existing customers') credited.push({ n: c.name, src, via, raw: hit?.raw || null, lead: hit?.d || null, first: c.done[0].day, jobs: c.done.length, rev: Math.round(total), h: `${HCP}/customers/${c.id}`, g: hit ? gLink(hit.id) : null });
   }
-  notes.push(`Attribution (HCP customers since ${start}): ${how.ghl_phone} matched to GHL by phone, ${how.ghl_email} by email, ${how.hcp_field} from the HCP lead source, ${how.not_captured} with no source; ${how.existing} existing customers.`);
+  credited.sort((a, b) => (a.first < b.first ? 1 : -1));
+  notes.push(`Attribution (HCP customers since ${start}): matched to GHL by phone ${how.phone}, email ${how.email}, name ${how.name}; from the HCP lead source ${how.hcp_field}; no source ${how.not_captured}; existing customers ${how.existing}.`);
   // sanity: credited customers should not exceed that channel's GHL leads over the same year
   for (const ch of PAID) {
     const custN = sum12(newBy[ch]), leadN = sum12(leadsDaily[ch]);
@@ -165,18 +203,21 @@ export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
   const heatAll = Array.from({ length: 7 }, () => new Array(24).fill(0));
   const fix = config.routing_fix_date;
   const ba = { before: { answered: 0, missed: 0, voicemail: 0 }, after: { answered: 0, missed: 0, voicemail: 0 } };
-  const byContact = new Map();
+  const byContact = new Map(); const missList = [];
+  const nameById = new Map((ghl.contacts || []).map((c) => [c.id, ghlName(c)]));
+  let callMsgs = 0;
   for (const m of ghl.messages || []) {
     const type = String(m.messageType || m.type || '').toUpperCase();
     const day = localDay(m.dateAdded); if (!day) continue;
     (byContact.get(m.contactId) || byContact.set(m.contactId, []).get(m.contactId)).push(m);
+    if (/CALL/.test(type)) callMsgs++;
     if (!/CALL/.test(type) || String(m.direction).toLowerCase() !== 'inbound' || day < since) continue;
     const st = String(m.meta?.call?.status || m.status || '').toLowerCase();
     const kind = /voicemail/.test(st) ? 'voicemail' : /complete|answered/.test(st) ? 'answered' : 'missed';
     put(calls[kind], day);
     ba[day >= fix ? 'after' : 'before'][kind]++;
     const [wd, hr] = localWeekdayHour(m.dateAdded);
-    heatAll[wd][hr]++; if (kind !== 'answered') heat[wd][hr]++;
+    heatAll[wd][hr]++; if (kind !== 'answered') { heat[wd][hr]++; missList.push({ n: nameById.get(m.contactId) || 'Caller', t: m.dateAdded, k: kind, u: gLink(m.contactId) }); }
   }
   // human first response for new leads in the message window
   const resp = [];
@@ -194,14 +235,21 @@ export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
   }
   const r = resp.length ? { median: med(resp), within5: resp.filter((x) => x <= 5).length / resp.length, over60: resp.filter((x) => x > 60).length, n: resp.length, noReply } : { median: null, n: 0, noReply };
 
-  const waiting = { total: 0, lt1: 0, d1_3: 0, d3p: 0, older: 0 };
+  // waiting: last message came from the customer in the last 30 days and needs an answer.
+  // Opt-outs and one-word acknowledgements to texting campaigns don't count.
+  const waiting = { total: 0, lt1: 0, d1_3: 0, d3p: 0, older: 0, skipped: 0 }; const waitList = [];
+  const ackOnly = /^\s*(stop\w*|unsubscribe|end|quit|cancel|thanks?( you)?|thx|ty|ok(ay)?|k|yes|no|got it|sounds good|perfect|great|👍|🙏|❤️)[\s.!]*$/i;
+  const typeLabel = (t) => { t = String(t || '').toUpperCase(); return /CALL/.test(t) ? 'Missed call' : /SMS|TEXT/.test(t) ? 'Text' : /EMAIL/.test(t) ? 'Email' : /FB|FACEBOOK|IG|INSTAGRAM/.test(t) ? 'Social message' : /GMB|GOOGLE/.test(t) ? 'Google message' : /FORM|WEBCHAT|LIVE/.test(t) ? 'Web chat or form' : 'Message'; };
   for (const c of ghl.conversations || []) {
     if (String(c.lastMessageDirection || '').toLowerCase() !== 'inbound') continue;
     const d = localDay(c.lastMessageDate); if (!d) continue;
     const age = daysBetween(d, today);
     if (age > 30) { waiting.older++; continue; }
+    if (!/CALL/i.test(String(c.lastMessageType || '')) && ackOnly.test(String(c.lastMessageBody || ''))) { waiting.skipped++; continue; }
     waiting.total++; if (age < 1) waiting.lt1++; else if (age <= 3) waiting.d1_3++; else waiting.d3p++;
+    waitList.push({ n: c.fullName || c.contactName || [c.firstName, c.lastName].filter(Boolean).join(' ') || 'Contact', d, age, t: typeLabel(c.lastMessageType), u: ghl.locationId ? `${config.ghl.app_base}/v2/location/${ghl.locationId}/conversations/conversations/${c.id}` : null });
   }
+  waitList.sort((a, b) => b.age - a.age);
   const loc = ghl.locationId || '';
 
   // ======================= Windsor: spend, listings, rankings =======================
@@ -209,8 +257,9 @@ export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
   const spend = { 'Google Ads': zeros(), Meta: zeros() };
   const clicks = { 'Google Ads': zeros(), Meta: zeros() };
   const lastSpend = {};
-  const lsaRe = rx(config.windsor.exclude_google_lsa || '^ghs');
-  for (const x of win.gads || []) { if (ex.test(x.campaign || '') || lsaRe.test(x.campaign || '')) continue; put(spend['Google Ads'], x.date, num(x.spend)); put(clicks['Google Ads'], x.date, num(x.clicks)); if (num(x.spend) > 0 && (!lastSpend['Google Ads'] || x.date > lastSpend['Google Ads'])) lastSpend['Google Ads'] = x.date; }
+  const lsaRe = rx(config.windsor.exclude_google_lsa || 'localservices');
+  const lsaWin = {}, lsaLeads = {};
+  for (const x of win.gads || []) { if (lsaRe.test(x.campaign || '')) { const m = month(x.date); lsaWin[m] = (lsaWin[m] || 0) + num(x.spend); lsaLeads[m] = (lsaLeads[m] || 0) + num(x.conversions); continue; } if (ex.test(x.campaign || '')) continue; put(spend['Google Ads'], x.date, num(x.spend)); put(clicks['Google Ads'], x.date, num(x.clicks)); if (num(x.spend) > 0 && (!lastSpend['Google Ads'] || x.date > lastSpend['Google Ads'])) lastSpend['Google Ads'] = x.date; }
   for (const x of win.meta || []) { if (ex.test(x.campaign || '')) continue; put(spend.Meta, x.date, num(x.spend)); put(clicks.Meta, x.date, num(x.clicks)); if (num(x.spend) > 0 && (!lastSpend.Meta || x.date > lastSpend.Meta)) lastSpend.Meta = x.date; }
   const metaCamp = (win.meta || []).reduce((s, x) => s + num(x.spend), 0);
   const metaAll = (win.metaTotal || []).reduce((s, x) => s + num(x.spend), 0);
@@ -234,10 +283,11 @@ export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
 
   // rankings: weekly avg position per non-brand query
   const brand = rx(config.windsor.brand_queries);
+  const rankEx = rx(config.windsor.rank_exclude || '$^');
   const weekOf = (d) => Math.floor(daysBetween(d, today) / 7); // 0 = this week
   const q = new Map();
   for (const x of win.sc || []) {
-    if (!x.query || brand.test(x.query)) continue;
+    if (!x.query || brand.test(x.query) || rankEx.test(x.query)) continue;
     const w = weekOf(x.date); if (w < 0 || w > 11) continue;
     const o = q.get(x.query) || { query: x.query, impr: 0, clicks: 0, wk: Array.from({ length: 12 }, () => ({ p: 0, i: 0 })) };
     const i = num(x.impressions); o.impr += i; o.clicks += num(x.clicks);
@@ -263,13 +313,19 @@ export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
     days, types: TYPES, channels: LEAD_CHANNELS, paid: PAID,
     daily: { rev, cnt, newCustomers, leads: leadsDaily, calls, spend, clicks, revBy, newBy },
     sources: SOURCES, marketingStart: start,
-    lsa, cohorts, custCohorts, attribution: how, listings, rankings,
+    audit: { rawSources: [...rawCount.entries()].sort((a, b) => b[1] - a[1]).slice(0, 40), callMessages: callMsgs, messages: (ghl.messages || []).length, conversations: (ghl.conversations || []).length, contacts: (ghl.contacts || []).length, opportunities: (ghl.opportunities || []).length, waitingSkipped: waiting.skipped },
+    lsa, lsaWindsor: Object.fromEntries(Object.entries(lsaWin).map(([m, v]) => [m, +v.toFixed(2)])), lsaCharged: lsaLeads, cohorts, custCohorts, attribution: how, listings, rankings,
     snapshot: {
       waiting, link: loc ? `${config.ghl.app_base}/v2/location/${loc}/conversations/conversations` : null,
-      estimates: { open: estOpen, value: Math.round(estValue), aged: estAged }, needsScheduling, schedule,
+      estimates: { open: estOpen, value: Math.round(estValue), aged: estAged }, needsScheduling: unsched.length, schedule,
       customers: { withJob, repeat, winback12: wb12, winback24: wb24 },
       pullThrough: { tuneups: tune, converted: tuneConv, revenue: Math.round(tuneConvRev) },
       response: r, heat, heatAll, beforeAfter: ba, existingInCrm, syncExcluded,
+    },
+    lists: {
+      credited: credited.slice(0, 2500), leads: leadList.sort((a, b) => (a.d < b.d ? 1 : -1)).slice(0, 3000), waiting: waitList.slice(0, 300),
+      estimates: estList.slice(0, 300), unscheduled: unsched.slice(0, 300), missed: missList.sort((a, b) => (a.t < b.t ? 1 : -1)).slice(0, 400),
+      winback: winList.sort((a, b) => b.ltv - a.ltv).slice(0, 300),
     },
   };
 }

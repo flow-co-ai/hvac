@@ -119,6 +119,17 @@ async function ghlMessages(convId) {
 export async function pullGHL(today) {
   const loc = need('GHL_LOCATION_ID');
   const contacts = (await ghlContacts(loc)) || [];
+  const opportunities = (await firstThatWorks('GoHighLevel opportunities', [async () => {
+    const out = [];
+    for (let page = 1; page < 200; page++) {
+      const r = await ghl(`/opportunities/search?location_id=${loc}&limit=100&page=${page}`);
+      const rows = r.opportunities || [];
+      out.push(...rows);
+      if (rows.length < 100) break;
+      await sleep(150);
+    }
+    return out;
+  }])) || [];
   const since = addDays(today, -config.ghl.message_window_days);
   const conversations = (await firstThatWorks('GoHighLevel conversations', [() => ghlConversations(loc, addDays(today, -400))])) || [];
   const recent = conversations.filter((c) => localDay(c.lastMessageDate) >= since);
@@ -132,7 +143,7 @@ export async function pullGHL(today) {
     await sleep(110);
   }
   if (failed) notes.push(`GoHighLevel messages: ${failed} conversations could not be read`);
-  return { contacts, conversations, messages, locationId: loc };
+  return { contacts, opportunities, conversations, messages, locationId: loc };
 }
 export async function checkGHL() {
   const loc = need('GHL_LOCATION_ID');

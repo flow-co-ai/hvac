@@ -27,6 +27,21 @@ if (process.env.FIXTURE) {
 
 const data = transform({ ...raw, lsaSpend, today, notes });
 for (const n of data.meta.notes) console.log('NOTE:', n);
+// Counts-only summary on the run page (Actions → run → Summary). No names.
+if (process.env.GITHUB_STEP_SUMMARY) {
+  const a = data.audit, at = data.attribution, sn = data.snapshot;
+  const lines = [
+    '## Data check', '',
+    `Pulled: ${a.contacts} GHL contacts, ${a.opportunities} opportunities, ${a.conversations} conversations, ${a.messages} messages (${a.callMessages} call records).`, '',
+    `**Attribution of new HCP customers since ${data.marketingStart}:** phone ${at.phone}, email ${at.email}, name ${at.name}, HCP lead source ${at.hcp_field}, no source ${at.not_captured}. Existing customers: ${at.existing}.`, '',
+    `**Waiting:** ${sn.waiting.total} counted, ${a.waitingSkipped} skipped as opt-outs or one-word replies, ${sn.waiting.older} older than 30 days.`, '',
+    `**Open estimates:** ${sn.estimates.open} worth $${sn.estimates.value.toLocaleString()}.`, '',
+    ...data.meta.notes.map((n) => `- ${n}`), '',
+    '### GHL source values → channel', '', '| Source value | Contacts |', '|---|---|',
+    ...a.rawSources.map(([k, v]) => `| ${String(k).replace(/\|/g, '/')} | ${v} |`),
+  ];
+  fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join('\n') + '\n');
+}
 if (data.meta.missingLsa.length) console.log('NOTE: LSA spend missing for', data.meta.missingLsa.join(', '));
 
 // leak guard: the page carries totals only
