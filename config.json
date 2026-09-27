@@ -141,8 +141,9 @@
     {
       "name": "Fall tune-up",
       "pipeline": "tune",
-      "window_days": 60,
-      "offer": "tune"
+      "window_days": 21,
+      "offer": "tune",
+      "follow_on_days": 30
     }
   ],
   "answering_hours": [
