@@ -214,6 +214,10 @@ export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
     for (const c of ghl.contacts || []) { const ch = contactChannel(c); if (!PAID.includes(ch)) continue; const d = localDay(c.dateAdded); if (!d || d < start) continue; pd.leads++;
       const cid = phoneIdx.get(phone10(c.phone)) || emailIdx.get(email(c.email)); const cu = cid && byCust.get(cid); if (!cu) continue; pd.inHcp++;
       const fj = [cu.created[0], cu.done[0]?.day].filter(Boolean).sort()[0]; if (fj && fj < d) pd.before++; else pd.after++; }
+    // also look in the full HCP customer list, which includes people with only an estimate or no job
+    const allPh = new Set(), allEm = new Set(); for (const c of hcp.customers || []) { const k = customerKeys(c); k.ph.forEach((p) => allPh.add(p)); if (k.em) allEm.add(k.em); }
+    let anyRec = 0; for (const c of ghl.contacts || []) { if (!PAID.includes(contactChannel(c))) continue; const d = localDay(c.dateAdded); if (!d || d < start) continue; if (allPh.has(phone10(c.phone)) || (email(c.email) && allEm.has(email(c.email)))) anyRec++; }
+    notes.push(`Paid leads with any Housecall Pro customer record (including estimate-only): ${anyRec} of ${pd.leads}.`);
     notes.push(`Paid leads since ${start}: ${pd.leads}. Found in HCP: ${pd.inHcp} (${pd.before} were already customers before the lead, ${pd.after} became customers after).`); }
   notes.push(`Imported-list customers (old customer file, now counted as existing): ${how.imported}.`);
   notes.push(`Phone or email shared with a GHL contact: ${diag.overlap} new customers; ${diag.lateOnly} of them only have GHL contacts created after their first job (not credited).`);

@@ -185,7 +185,7 @@ export async function pullWindsor(from, to) {
   for (const st of w.sites || [{ id: w.search_console, name: w.search_console }]) {
     if (st.pending) continue;
     sites[st.id] = {
-      totals: await safe(`Search Console ${st.name}`, () => windsor('searchconsole', st.id, ['date', 'clicks', 'impressions', 'position'], from, to)),
+      totals: await safe(`Search Console ${st.name}`, () => windsor('searchconsole', st.id, ['date', 'clicks', 'impressions', 'position'], from > addDays(to, -480) ? from : addDays(to, -480), to)), // Search Console keeps 16 months
       queries: await safe(`Search Console queries ${st.name}`, () => windsor('searchconsole', st.id, ['date', 'query', 'clicks', 'impressions', 'position'], addDays(to, -120), to)),
       pages: await safe(`Search Console pages ${st.name}`, () => windsor('searchconsole', st.id, ['page', 'clicks', 'impressions', 'position'], addDays(to, -90), to)),
     };
