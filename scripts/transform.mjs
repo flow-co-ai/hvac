@@ -90,8 +90,8 @@ export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
   const phoneIdx = new Map(), emailIdx = new Map();
   for (const c of byCust.values()) { for (const p of c.keys.ph) phoneIdx.set(p, c.id); if (c.keys.em) emailIdx.set(c.keys.em, c.id); }
   const leadsDaily = Object.fromEntries(LEAD_CHANNELS.map((n) => [n, zeros()]));
-  const cohorts = {}; // month -> channel -> {leads, booked, customers, revenue}
-  const cell = (m, ch) => ((cohorts[m] ||= {})[ch] ||= { leads: 0, booked: 0, customers: 0, revenue: 0 });
+  const cohorts = {}; // lead month -> channel -> {leads}
+  const cell = (m, ch) => ((cohorts[m] ||= {})[ch] ||= { leads: 0 });
   let existingInCrm = 0, syncExcluded = 0;
   const contactCh = new Map();
   const leadDayByContact = new Map();
@@ -106,13 +106,56 @@ export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
     if (cust && ((cust.created[0] && cust.created[0] < leadDay) || (firstDone.get(cid) && firstDone.get(cid) < leadDay))) { existingInCrm++; continue; }
     if (ch === 'Text campaign') continue; // replies from past-customer texting are not new demand
     put(leadsDaily[ch], leadDay); leadDayByContact.set(c.id, leadDay);
-    const k = cell(month(leadDay), ch); k.leads++;
-    if (!cust) continue;
-    const inWin = (d) => d && d >= leadDay && daysBetween(leadDay, d) <= 365;
-    if (cust.created.some(inWin)) k.booked++;
-    const doneAfter = cust.done.filter((d) => inWin(d.day));
-    if (doneAfter.length) { k.customers++; k.revenue += doneAfter.reduce((s, d) => s + d.amt, 0); }
+    cell(month(leadDay), ch).leads++;
   }
+
+  // ======================= HCP-first attribution =======================
+  // Every completed HCP job belongs to a customer. The customer's source comes from the
+  // earliest matching GHL contact that existed before their first HCP job (within a year),
+  // then from the HCP lead source field, else "Source not captured". Customers whose first
+  // job predates the marketing program are "Existing customers".
+  const gByPhone = new Map(), gByEmail = new Map();
+  const add = (m, k, c) => { if (!k) return; (m.get(k) || m.set(k, []).get(k)).push(c); };
+  for (const c of ghl.contacts || []) {
+    const ch = contactChannel(c); if (CH.find((x) => x.name === ch)?.exclude) continue;
+    const d = localDay(c.dateAdded || c.dateCreated); if (!d) continue;
+    const o = { d, ch }; add(gByPhone, phone10(c.phone), o); add(gByEmail, email(c.email), o);
+    for (const p of c.additionalPhones || []) add(gByPhone, phone10(p.phone || p), o);
+  }
+  const hcpChannel = (src) => { if (!src) return null; for (const ch of CH) if (!ch.exclude && ch.re.test(String(src))) return ch.name; return null; };
+  const SOURCES = [...LEAD_CHANNELS, 'Existing customers'];
+  const revBy = Object.fromEntries(SOURCES.map((n) => [n, zeros()]));
+  const newBy = Object.fromEntries(SOURCES.map((n) => [n, zeros()]));
+  const custCohorts = {}; // first-job month -> source -> {customers, jobs, revenue}
+  const how = { ghl_phone: 0, ghl_email: 0, hcp_field: 0, not_captured: 0, existing: 0 };
+  const start = config.marketing_start || from;
+  for (const c of byCust.values()) {
+    if (!c.done.length) continue;
+    const firstJob = [c.created[0], c.done[0].day].filter(Boolean).sort()[0];
+    let src = null, via = null;
+    if (c.done[0].day < start) { src = 'Existing customers'; via = 'existing'; }
+    else {
+      const pick = (arr) => (arr || []).filter((o) => o.d <= firstJob && daysBetween(o.d, firstJob) <= 365).sort((a, b) => (a.d < b.d ? -1 : 1))[0];
+      let hit = null;
+      for (const p of c.keys.ph) { const h = pick(gByPhone.get(p)); if (h && (!hit || h.d < hit.d)) { hit = h; via = 'ghl_phone'; } }
+      if (!hit) { const h = pick(gByEmail.get(c.keys.em)); if (h) { hit = h; via = 'ghl_email'; } }
+      if (hit && hit.ch !== 'Source not captured' && hit.ch !== 'Text campaign') src = hit.ch;
+      if (!src) { const f = hcpChannel(c.jobs.map((j) => j.lead_source || j.customer?.lead_source).find(Boolean)); if (f && f !== 'Text campaign') { src = f; via = 'hcp_field'; } }
+      if (!src) { src = 'Source not captured'; via = 'not_captured'; }
+    }
+    how[via]++;
+    put(newBy[src], c.done[0].day);
+    const k = ((custCohorts[month(c.done[0].day)] ||= {})[src] ||= { customers: 0, jobs: 0, revenue: 0 });
+    k.customers++;
+    for (const d of c.done) { put(revBy[src], d.day, d.amt); k.jobs++; k.revenue += d.amt; }
+  }
+  notes.push(`Attribution (HCP customers since ${start}): ${how.ghl_phone} matched to GHL by phone, ${how.ghl_email} by email, ${how.hcp_field} from the HCP lead source, ${how.not_captured} with no source; ${how.existing} existing customers.`);
+  // sanity: credited customers should not exceed that channel's GHL leads over the same year
+  for (const ch of PAID) {
+    const custN = sum12(newBy[ch]), leadN = sum12(leadsDaily[ch]);
+    if (custN > leadN * 1.1 + 2) notes.push(`Check ${ch}: ${custN} new customers credited vs ${leadN} leads in 12 months. The channel rule may be too broad.`);
+  }
+  function sum12(a) { return a.slice(-365).reduce((x, y) => x + y, 0); }
 
   // ======================= GHL: calls, response, waiting =======================
   const since = addDays(today, -config.ghl.message_window_days);
@@ -211,14 +254,16 @@ export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
   const r0 = (a) => a.map((v) => Math.round(v));
   for (const k of Object.keys(rev)) rev[k] = r0(rev[k]);
   for (const k of Object.keys(spend)) spend[k] = spend[k].map((v) => +v.toFixed(2));
-  for (const m of Object.values(cohorts)) for (const c of Object.values(m)) c.revenue = Math.round(c.revenue);
+  for (const m of Object.values(custCohorts)) for (const c of Object.values(m)) c.revenue = Math.round(c.revenue);
+  for (const k of Object.keys(revBy)) revBy[k] = r0(revBy[k]);
   if (r.median != null) r.median = +r.median.toFixed(1);
   if (r.within5 != null) r.within5 = +r.within5.toFixed(3);
   return {
     meta: { name: config.name, generated: new Date().toISOString(), today, tz, from, adsActive: config.ads_active, routingFix: fix, messageWindow: config.ghl.message_window_days, gbpLag: config.windsor.gbp_lag_days, notes, missingLsa, lastSpend },
     days, types: TYPES, channels: LEAD_CHANNELS, paid: PAID,
-    daily: { rev, cnt, newCustomers, leads: leadsDaily, calls, spend, clicks },
-    lsa, cohorts, listings, rankings,
+    daily: { rev, cnt, newCustomers, leads: leadsDaily, calls, spend, clicks, revBy, newBy },
+    sources: SOURCES, marketingStart: start,
+    lsa, cohorts, custCohorts, attribution: how, listings, rankings,
     snapshot: {
       waiting, link: loc ? `${config.ghl.app_base}/v2/location/${loc}/conversations/conversations` : null,
       estimates: { open: estOpen, value: Math.round(estValue), aged: estAged }, needsScheduling, schedule,
