@@ -433,7 +433,7 @@ export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
   for (const pl of ghl.pipelines || []) { pipeName.set(pl.id, pl.name); for (const st of pl.stages || []) stageName.set(st.id, st.name); }
   const contactById = new Map((ghl.contacts || []).map((c) => [c.id, c]));
   const campaigns = (config.campaigns || []).map((cp) => {
-    const re = rx(cp.pipeline), win = cp.window_days || 60, offer = rx(cp.offer || 'tune');
+    const re = rx(cp.pipeline), win = cp.window_days || 21, foWin = cp.follow_on_days || 30, offer = rx(cp.offer || 'tune');
     const opps = (ghl.opportunities || []).filter((o) => re.test(pipeName.get(o.pipelineId) || o.pipeline?.name || ''));
     const stages = {}; const list = []; let booked = 0, done = 0, revenue = 0, followOn = 0, otherWork = 0; const starts = [];
     for (const o of opps) {
@@ -445,10 +445,11 @@ export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
       const inWin = (x) => x >= d && daysBetween(d, x) <= win;
       // the campaign's own result: a tune-up booked or done after the customer was texted
       const tuJobs = cust ? cust.jobs.filter((j) => inWin(localDay(j.created_at) || '') && jobType(j) === 'Tune-up') : [];
-      const tuDone = cust ? cust.done.filter((x) => x.type === 'Tune-up' && inWin(x.day)) : [];
+      // booked within the window after the text; the visit itself can happen later
+      const tuDone = cust ? cust.done.filter((x) => x.type === 'Tune-up' && inWin(localDay(x.j.created_at) || x.day)) : [];
       const firstTu = tuDone[0]?.day || null;
       // follow-on: repair or replacement completed after that campaign tune-up
-      const fo = firstTu ? cust.done.filter((x) => (x.type === 'Repair' || x.type === 'Replacement') && x.day >= firstTu && daysBetween(firstTu, x.day) <= win) : [];
+      const fo = firstTu ? cust.done.filter((x) => (x.type === 'Repair' || x.type === 'Replacement') && x.day >= firstTu && daysBetween(firstTu, x.day) <= foWin) : [];
       // other work in the window that did not come through a campaign tune-up (not credited)
       const other = cust && !firstTu ? cust.done.filter((x) => inWin(x.day) && x.type !== 'Tune-up').reduce((a, x) => a + x.amt, 0) : 0;
       const rv = tuDone.reduce((a, x) => a + x.amt, 0), fov = fo.reduce((a, x) => a + x.amt, 0);
@@ -456,7 +457,7 @@ export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
       list.push({ n: ghlName(ct) !== 'Contact' ? ghlName(ct) : (o.name || 'Contact'), d, st, b: !!(tuJobs.length || tuDone.length), rv: Math.round(rv + fov), g: gLink(o.contactId), h: cust ? hcpLink('customer', cust.id) : null });
     }
     list.sort((a, b) => b.rv - a.rv || (b.b - a.b) || (a.d < b.d ? 1 : -1));
-    return { name: cp.name, start: starts.sort()[0] || null, opps: list.length, stages: Object.entries(stages).sort((a, b) => b[1] - a[1]), booked, done, revenue: Math.round(revenue), followOn: Math.round(followOn), otherWork: Math.round(otherWork), window: win, list: list.slice(0, 1200) };
+    return { name: cp.name, start: starts.sort()[0] || null, opps: list.length, stages: Object.entries(stages).sort((a, b) => b[1] - a[1]), booked, done, revenue: Math.round(revenue), followOn: Math.round(followOn), otherWork: Math.round(otherWork), window: win, foWindow: foWin, list: list.slice(0, 1200) };
   });
   if ((config.campaigns || []).length && !campaigns.some((c) => c.opps)) notes.push(`Campaigns: no GHL pipeline matched "${config.campaigns.map((c) => c.pipeline).join(', ')}". Pipelines found: ${[...pipeName.values()].join(', ') || 'none'}.`);
 
