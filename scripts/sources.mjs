@@ -136,14 +136,15 @@ export async function pullGHL(today) {
 }
 export async function checkGHL() {
   const loc = need('GHL_LOCATION_ID');
-  const r = await ghl(`/locations/${loc}`);
-  return `sub-account "${(r.location || r).name || loc}"`;
+  const r = await ghl(`/contacts/?locationId=${loc}&limit=1`);
+  const total = r.meta?.total ?? r.total;
+  return `contacts readable${total != null ? ` (${total} contacts)` : ''}`;
 }
 
 // ---------------- Windsor ----------------
 async function windsor(connector, account, fields, from, to) {
   const key = need('WINDSOR_API_KEY');
-  const qs = new URLSearchParams({ api_key: key, date_from: from, date_to: to, fields: fields.join(','), select_accounts: `${connector}__${account}` });
+  const qs = new URLSearchParams({ api_key: key, date_from: from, date_to: to, fields: fields.join(','), select_accounts: account });
   const r = await getJSON(`https://connectors.windsor.ai/${connector}?${qs}`, {}, `Windsor ${connector}`);
   const rows = r.data || r.result || [];
   // Shared Windsor: keep only this client's account even if the filter was ignored

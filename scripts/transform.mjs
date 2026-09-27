@@ -166,7 +166,8 @@ export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
   const spend = { 'Google Ads': zeros(), Meta: zeros() };
   const clicks = { 'Google Ads': zeros(), Meta: zeros() };
   const lastSpend = {};
-  for (const x of win.gads || []) { if (ex.test(x.campaign || '')) continue; put(spend['Google Ads'], x.date, num(x.spend)); put(clicks['Google Ads'], x.date, num(x.clicks)); if (num(x.spend) > 0 && (!lastSpend['Google Ads'] || x.date > lastSpend['Google Ads'])) lastSpend['Google Ads'] = x.date; }
+  const lsaRe = rx(config.windsor.exclude_google_lsa || '^ghs');
+  for (const x of win.gads || []) { if (ex.test(x.campaign || '') || lsaRe.test(x.campaign || '')) continue; put(spend['Google Ads'], x.date, num(x.spend)); put(clicks['Google Ads'], x.date, num(x.clicks)); if (num(x.spend) > 0 && (!lastSpend['Google Ads'] || x.date > lastSpend['Google Ads'])) lastSpend['Google Ads'] = x.date; }
   for (const x of win.meta || []) { if (ex.test(x.campaign || '')) continue; put(spend.Meta, x.date, num(x.spend)); put(clicks.Meta, x.date, num(x.clicks)); if (num(x.spend) > 0 && (!lastSpend.Meta || x.date > lastSpend.Meta)) lastSpend.Meta = x.date; }
   const metaCamp = (win.meta || []).reduce((s, x) => s + num(x.spend), 0);
   const metaAll = (win.metaTotal || []).reduce((s, x) => s + num(x.spend), 0);
