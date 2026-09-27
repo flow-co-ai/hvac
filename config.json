@@ -7,7 +7,12 @@
   "marketing_start": "2026-04-01",
   "hcp": {
     "base": "https://api.housecallpro.com",
-    "amounts_in_cents": true
+    "amounts_in_cents": true,
+    "links": {
+      "customer": "https://pro.housecallpro.com/app/customers/{id}",
+      "job": "https://pro.housecallpro.com/app/jobs/{id}",
+      "estimate": "https://pro.housecallpro.com/app/estimates/{id}"
+    }
   },
   "ghl": {
     "base": "https://services.leadconnectorhq.com",
