@@ -53,6 +53,14 @@ export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
     if (!byCust.has(cid)) byCust.set(cid, { id: cid, jobs: [], keys: customerKeys(j.customer), name: hcpName(j.customer) });
     byCust.get(cid).jobs.push(j);
   }
+  const custRec = new Map((hcp.customers || []).map((c) => [c.id, c]));
+  for (const c of byCust.values()) {
+    const full = custRec.get(c.id); if (!full) continue;
+    const k = customerKeys(full);
+    c.keys = { ph: [...new Set([...c.keys.ph, ...k.ph])], em: c.keys.em || k.em, nm: c.keys.nm || k.nm };
+    if (c.name === 'Customer') c.name = hcpName(full);
+    c.leadSource = full.lead_source || null;
+  }
   const rev = { total: zeros() }; const cnt = { total: zeros() };
   for (const t of TYPES) { rev[t] = zeros(); cnt[t] = zeros(); }
   const newCustomers = zeros();
@@ -159,26 +167,28 @@ export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
   const newBy = Object.fromEntries(SOURCES.map((n) => [n, zeros()]));
   const custCohorts = {}; // first-job month -> source -> {customers, jobs, revenue}
   const how = { phone: 0, email: 0, name: 0, hcp_field: 0, not_captured: 0, existing: 0 };
+  const match = { phone: 0, email: 0, name: 0, none: 0, withGhlSource: 0 };
   const credited = [];
   const start = config.marketing_start || from;
   for (const c of byCust.values()) {
     if (!c.done.length) continue;
     const firstJob = [c.created[0], c.done[0].day].filter(Boolean).sort()[0];
-    let src = null, via = null, hit = null;
+    let src = null, via = null, hit = null, cands = [];
     if (c.done[0].day < start) { src = 'Existing customers'; via = 'existing'; }
     else {
       const ok = (o) => o.d <= firstJob && daysBetween(o.d, firstJob) <= 365;
-      const cands = [];
+      cands = [];
       for (const p of c.keys.ph) for (const o of gByPhone.get(p) || []) if (ok(o)) cands.push([o, 'phone']);
       for (const o of gByEmail.get(c.keys.em) || []) if (ok(o)) cands.push([o, 'email']);
       if (c.keys.nm && hcpNameCount.get(c.keys.nm) === 1) { const g = (gByName.get(c.keys.nm) || []).filter(ok); if (g.length && new Set(g.map((o) => o.id)).size === 1) cands.push([g[0], 'name']); }
       // prefer a contact with a real source, then the earliest
       cands.sort((a, b) => ((a[0].ch === 'Source not captured') - (b[0].ch === 'Source not captured')) || (a[0].d < b[0].d ? -1 : 1));
       if (cands.length) { [hit, via] = cands[0]; if (hit.ch !== 'Source not captured' && hit.ch !== 'Text campaign') src = hit.ch; }
-      if (!src) { const f = hcpChannel(c.jobs.map((j) => j.lead_source || j.customer?.lead_source).find(Boolean)); if (f && f !== 'Text campaign') { src = f; via = 'hcp_field'; } }
+      if (!src) { const f = hcpChannel(c.leadSource || c.jobs.map((j) => j.lead_source || j.customer?.lead_source).find(Boolean)); if (f && f !== 'Text campaign') { src = f; via = 'hcp_field'; } }
       if (!src) { src = 'Source not captured'; via = hit ? via : 'not_captured'; }
     }
     how[src === 'Source not captured' ? 'not_captured' : via]++;
+    if (src !== 'Existing customers') { match[cands.length ? cands[0][1] : 'none']++; if (hit && hit.ch !== 'Source not captured') match.withGhlSource++; }
     put(newBy[src], c.done[0].day);
     const k = ((custCohorts[month(c.done[0].day)] ||= {})[src] ||= { customers: 0, jobs: 0, revenue: 0 });
     k.customers++;
@@ -187,6 +197,9 @@ export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
     if (src !== 'Existing customers') credited.push({ n: c.name, src, via, raw: hit?.raw || null, lead: hit?.d || null, first: c.done[0].day, jobs: c.done.length, rev: Math.round(total), h: `${HCP}/customers/${c.id}`, g: hit ? gLink(hit.id) : null });
   }
   credited.sort((a, b) => (a.first < b.first ? 1 : -1));
+  const hcpWith = { phone: 0, email: 0, name: 0 }; for (const c of byCust.values()) { if (c.keys.ph.length) hcpWith.phone++; if (c.keys.em) hcpWith.email++; if (c.keys.nm) hcpWith.name++; }
+  const ghlWith = { phone: 0, email: 0 }; for (const c of ghl.contacts || []) { if (phone10(c.phone)) ghlWith.phone++; if (email(c.email)) ghlWith.email++; }
+  notes.push(`Matching: ${match.phone + match.email + match.name} of ${match.phone + match.email + match.name + match.none} new customers found in GHL (phone ${match.phone}, email ${match.email}, name ${match.name}); ${match.withGhlSource} of those had a source in GHL. HCP customers with phone ${hcpWith.phone}, email ${hcpWith.email}, of ${byCust.size}. GHL contacts with phone ${ghlWith.phone}, email ${ghlWith.email}, of ${(ghl.contacts || []).length}.`);
   notes.push(`Attribution (HCP customers since ${start}): matched to GHL by phone ${how.phone}, email ${how.email}, name ${how.name}; from the HCP lead source ${how.hcp_field}; no source ${how.not_captured}; existing customers ${how.existing}.`);
   // sanity: credited customers should not exceed that channel's GHL leads over the same year
   for (const ch of PAID) {
@@ -312,7 +325,7 @@ export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
     meta: { name: config.name, generated: new Date().toISOString(), today, tz, from, adsActive: config.ads_active, routingFix: fix, messageWindow: config.ghl.message_window_days, gbpLag: config.windsor.gbp_lag_days, notes, missingLsa, lastSpend },
     days, types: TYPES, channels: LEAD_CHANNELS, paid: PAID,
     daily: { rev, cnt, newCustomers, leads: leadsDaily, calls, spend, clicks, revBy, newBy },
-    sources: SOURCES, marketingStart: start,
+    sources: SOURCES, marketingStart: start, matching: match,
     audit: { rawSources: [...rawCount.entries()].sort((a, b) => b[1] - a[1]).slice(0, 40), callMessages: callMsgs, messages: (ghl.messages || []).length, conversations: (ghl.conversations || []).length, contacts: (ghl.contacts || []).length, opportunities: (ghl.opportunities || []).length, waitingSkipped: waiting.skipped },
     lsa, lsaWindsor: Object.fromEntries(Object.entries(lsaWin).map(([m, v]) => [m, +v.toFixed(2)])), lsaCharged: lsaLeads, cohorts, custCohorts, attribution: how, listings, rankings,
     snapshot: {

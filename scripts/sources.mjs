@@ -41,7 +41,9 @@ async function hcpAll(resource, key, extra = '') {
 export async function pullHCP() {
   const jobs = await hcpAll('jobs', 'jobs', '&sort_direction=asc');
   const estimates = (await firstThatWorks('Housecall Pro estimates', [() => hcpAll('estimates', 'estimates')])) || [];
-  return { jobs, estimates };
+  // full customer records: job payloads can carry a trimmed customer without phones or email
+  const customers = (await firstThatWorks('Housecall Pro customers', [() => hcpAll('customers', 'customers')])) || [];
+  return { jobs, estimates, customers };
 }
 export async function checkHCP() {
   const r = await hcpGet('/jobs?page=1&page_size=1');
@@ -52,7 +54,7 @@ export async function checkHCP() {
 function ghlHeaders() {
   return { Authorization: `Bearer ${need('GHL_TOKEN')}`, Version: config.ghl.version, 'Content-Type': 'application/json' };
 }
-const ghl = (p, opts = {}) => getJSON(config.ghl.base + p, { ...opts, headers: ghlHeaders() }, 'GoHighLevel ' + p.split('?')[0]);
+const ghl = (p, opts = {}, version) => getJSON(config.ghl.base + p, { ...opts, headers: { ...ghlHeaders(), ...(version ? { Version: version } : {}) } }, 'GoHighLevel ' + p.split('?')[0].replace(/[A-Za-z0-9]{16,}/g, '{id}'));
 
 async function ghlContacts(loc) {
   // v2 search with searchAfter; falls back to the older list endpoint
@@ -103,10 +105,13 @@ async function ghlConversations(loc, sinceDay) {
   return out;
 }
 
+let msgVersion = '2021-04-15'; // the conversations API expects this version
 async function ghlMessages(convId) {
   const out = []; let q = '';
   for (let i = 0; i < 10; i++) {
-    const r = await ghl(`/conversations/${convId}/messages?limit=100${q}`);
+    let r;
+    try { r = await ghl(`/conversations/${convId}/messages?limit=100${q}`, {}, msgVersion); }
+    catch (e) { if (msgVersion === '2021-04-15') { msgVersion = config.ghl.version; r = await ghl(`/conversations/${convId}/messages?limit=100${q}`, {}, msgVersion); } else throw e; }
     const box = r.messages || {};
     const rows = box.messages || [];
     out.push(...rows);
@@ -134,15 +139,15 @@ export async function pullGHL(today) {
   const conversations = (await firstThatWorks('GoHighLevel conversations', [() => ghlConversations(loc, addDays(today, -400))])) || [];
   const recent = conversations.filter((c) => localDay(c.lastMessageDate) >= since);
   const messages = [];
-  let failed = 0;
+  let failed = 0, firstErr = '';
   for (const c of recent) {
     try {
       const ms = await ghlMessages(c.id);
       for (const m of ms) messages.push({ ...m, conversationId: c.id, contactId: m.contactId || c.contactId });
-    } catch { failed++; }
+    } catch (e) { failed++; if (!firstErr) firstErr = e.message.slice(0, 180); if (failed >= 25 && messages.length === 0) break; }
     await sleep(110);
   }
-  if (failed) notes.push(`GoHighLevel messages: ${failed} conversations could not be read`);
+  if (failed) notes.push(`GoHighLevel messages: ${failed} conversations could not be read. First error: ${firstErr}`);
   return { contacts, opportunities, conversations, messages, locationId: loc };
 }
 export async function checkGHL() {

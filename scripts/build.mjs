@@ -27,6 +27,21 @@ if (process.env.FIXTURE) {
 
 const data = transform({ ...raw, lsaSpend, today, notes });
 for (const n of data.meta.notes) console.log('NOTE:', n);
+if (data.meta.missingLsa.length) console.log('NOTE: LSA spend missing for', data.meta.missingLsa.join(', '));
+
+// leak guard: the page carries names but never an email or phone number.
+// Scrub any that slipped into a text field (a GHL contact named by its email, a source like "Call 708…").
+const EMAIL = /[^\s@"]+@[^\s@"]+\.[a-z]{2,}/gi, PHONE = /\+?1?[\s.-]?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}\b/g;
+let scrubbed = 0;
+const scrub = (v) => { if (typeof v !== 'string' || v.startsWith('http')) return v; const w = v.replace(EMAIL, '[email]').replace(PHONE, '[phone]'); if (w !== v) scrubbed++; return /^\s*\[(email|phone)\]\s*$/.test(w) ? 'Contact' : w; };
+for (const list of Object.values(data.lists || {})) for (const row of list) for (const k of Object.keys(row)) row[k] = scrub(row[k]);
+if (data.audit) data.audit.rawSources = data.audit.rawSources.map(([k, v]) => [scrub(k), v]);
+if (scrubbed) console.log(`NOTE: removed ${scrubbed} emails or phone numbers from names and source labels`);
+const json = JSON.stringify(data);
+const bad = [];
+json.replace(/"(\w+)":"([^"]*)"/g, (m, k, v) => { if (!v.startsWith('http') && (EMAIL.test(v) || /\b\d{10}\b/.test(v))) bad.push(k); EMAIL.lastIndex = 0; return m; });
+if (bad.length) throw new Error(`Output still has an email or phone number in field(s): ${[...new Set(bad)].join(', ')}. Stopping.`);
+
 // Counts-only summary on the run page (Actions → run → Summary). No names.
 if (process.env.GITHUB_STEP_SUMMARY) {
   const a = data.audit, at = data.attribution, sn = data.snapshot;
@@ -42,14 +57,6 @@ if (process.env.GITHUB_STEP_SUMMARY) {
   ];
   fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join('\n') + '\n');
 }
-if (data.meta.missingLsa.length) console.log('NOTE: LSA spend missing for', data.meta.missingLsa.join(', '));
-
-// leak guard: the page carries totals only
-const json = JSON.stringify(data);
-if (/@[a-z0-9-]+\.[a-z]{2,}/i.test(json) || /\b\d{10}\b/.test(json.replace(/"(generated|today)":"[^"]*"/g, ''))) {
-  throw new Error('Output looks like it contains an email or phone number. Stopping.');
-}
-
 const out = path.join(ROOT, 'public');
 if (process.env.NO_ENCRYPT) {
   fs.writeFileSync(path.join(out, 'data.json'), json);

@@ -81,7 +81,8 @@ export function makeFixture(today) {
   for (const d of dayRange(addDays(today, -120), today)) queries.forEach((q, i) => sc.push({ date: d, query: q, impressions: Math.round(rnd() * (20 - i)), clicks: rnd() < 0.1 ? 1 : 0, position: Math.max(1, 3 + i * 1.8 + (rnd() - 0.5) * 3 - daysAgo(d, today) / 60) }));
 
   const lsa = {}; for (const m of ['2026-04', '2026-05', '2026-06', '2026-07', '2026-08']) lsa[m] = Math.round(500 + rnd() * 500);
-  return { hcp: { jobs, estimates }, ghl: { contacts, conversations, messages, locationId: 'FAKELOCATION' }, win: { gads, meta, metaTotal, gbp, reviews, totals, sc }, lsa };
+  contacts.push({ id: 'ct_leak', firstName: 'someone@example.test', dateAdded: iso(today), source: 'Call from 708-555-1212' });
+  return { hcp: { jobs, estimates, customers: customers.map((c) => ({ id: c.id, first_name: c.first_name || 'Pat', last_name: c.last_name || 'Lee', mobile_number: c.mobile_number, email: c.email, lead_source: null })) }, ghl: { contacts, conversations, messages, locationId: 'FAKELOCATION' }, win: { gads, meta, metaTotal, gbp, reviews, totals, sc }, lsa };
 }
 const daysAgo = (d, today) => Math.round((new Date(today) - new Date(d)) / 864e5);
 let jn = 0;
