@@ -349,8 +349,9 @@ export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
   const brand = rx(config.windsor.brand_queries);
   const rankEx = rx(config.windsor.rank_exclude || '$^');
   const weekOf = (d) => Math.floor(daysBetween(d, today) / 7); // 0 = this week
+  const rankFor = (rows) => {
   const q = new Map();
-  for (const x of win.sc || []) {
+  for (const x of rows || []) {
     if (!x.query || brand.test(x.query) || rankEx.test(x.query)) continue;
     const w = weekOf(x.date); if (w < 0 || w > 11) continue;
     const o = q.get(x.query) || { query: x.query, impr: 0, clicks: 0, wk: Array.from({ length: 12 }, () => ({ p: 0, i: 0 })) };
@@ -358,12 +359,14 @@ export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
     o.wk[11 - w].p += num(x.position) * Math.max(i, 1); o.wk[11 - w].i += Math.max(i, 1);
     q.set(x.query, o);
   }
-  const rankings = [...q.values()].sort((a, b) => b.impr - a.impr).slice(0, 25).map((o) => {
+  return [...q.values()].sort((a, b) => b.impr - a.impr).slice(0, 25).map((o) => {
     const series = o.wk.map((w) => (w.i ? +(w.p / w.i).toFixed(1) : null));
     const avg = (arr) => { const v = arr.filter((x) => x != null); return v.length ? v.reduce((s, x) => s + x, 0) / v.length : null; };
     const now = avg(series.slice(8)), before = avg(series.slice(4, 8));
     return { query: o.query, pos: now != null ? +now.toFixed(1) : null, change: now != null && before != null ? +(before - now).toFixed(1) : null, impr: o.impr, clicks: o.clicks, series };
   }).filter((x) => x.pos != null);
+  };
+  const rankings = rankFor(win.sc);
 
 
   // ======================= website (Search Console, per site) =======================
@@ -396,7 +399,7 @@ export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
       topics: Object.entries(byTopic).map(([n, o]) => ({ n, ...fin(o) })).sort((a, b) => b.impr - a.impr),
       towns: Object.entries(byTown).map(([n, o]) => ({ n, ...fin(o) })).sort((a, b) => b.impr - a.impr).slice(0, 15),
       brand: { clicks: brandC, impr: brandI }, nonBrand: { clicks: nbC, impr: nbI }, striking, pages,
-      rankings: st.id === (config.windsor.sites || [])[0]?.id ? rankings : [] };
+      rankings: rankFor(src.queries), dataFrom: (src.totals || []).filter((x) => num(x.impressions) > 0).map((x) => x.date).sort()[0] || null };
   });
 
   // ======================= insights =======================
