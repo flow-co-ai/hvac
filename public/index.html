@@ -303,7 +303,7 @@ function bars(series, opt = {}) {
   // series: [{label, parts:[{v,c}], faded}]
   const narrow = window.innerWidth < 560, W = narrow ? 380 : (opt.w || 640), H = narrow ? Math.round((opt.h || 220) * 0.95) : (opt.h || 220), pl = 46, pb = 26, pt = 14, n = series.length;
   const tot = series.map((s) => s.parts.reduce((a, p) => a + p.v, 0));
-  const raw = Math.max(1, ...tot), mag = Math.pow(10, Math.floor(Math.log10(raw / 3))), step = (opt.money ? [1, 2, 2.5, 5, 10] : [1, 2, 5, 10]).map((k) => k * mag).find((st) => st * 3 >= raw) || mag * 10;
+  const raw = Math.max(1, ...tot), mag = Math.pow(10, Math.floor(Math.log10(raw / 3))), step = Math.max(opt.money ? 0 : 1, (opt.money ? [1, 2, 2.5, 5, 10] : [1, 2, 5, 10]).map((k) => k * mag).find((st) => st * 3 >= raw) || mag * 10);
   const mx = step * 3, bw = (W - pl) / n;
   const y = (v) => pt + (H - pt - pb) * (1 - v / mx);
   let g = '';
@@ -803,7 +803,7 @@ function web(rg) {
   </div>
   ${picker}
   <div class="grid">
-    <div class="panel s8"><h3>Visits from Google search by month</h3><p class="sub">${esc(st.name)}. The current month is to date.</p>
+    <div class="panel s8"><h3>Visits from Google search by month</h3><p class="sub">${esc(st.name)}. The current month is to date.${st.dataFrom ? ` Search Console data starts ${fmtDate(st.dataFrom)} ${st.dataFrom.slice(0, 4)}.` : ''}</p>
       ${bars(mo.map((x, i) => ({ label: mTick(x.m, i), parts: [{ v: x.v, c: 'var(--sky)' }], faded: i === mo.length - 1 })), { aria: 'Search visits by month' })}</div>
     <div class="panel s4"><h3>Closest to page one</h3><p class="sub">Last 4 weeks, positions 8 to 20, most searched first</p>
       ${st.striking.slice(0, 8).map((x) => `<div class="rank sd"><span class="p">${Math.round(x.pos)}</span><span class="q" title="${esc(x.q)}">${esc(x.q)}</span><span class="c">${fmtN(x.impr)} views</span></div>`).join('') || '<p class="sub">Nothing between positions 8 and 20 right now.</p>'}</div>
