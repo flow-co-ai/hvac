@@ -34,8 +34,9 @@ if (data.meta.missingLsa.length) console.log('NOTE: LSA spend missing for', data
 const EMAIL = /[^\s@"]+@[^\s@"]+\.[a-z]{2,}/gi, PHONE = /\+?1?[\s.-]?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}\b/g;
 let scrubbed = 0;
 const scrub = (v) => { if (typeof v !== 'string' || v.startsWith('http')) return v; const w = v.replace(EMAIL, '[email]').replace(PHONE, '[phone]'); if (w !== v) scrubbed++; return /^\s*\[(email|phone)\]\s*$/.test(w) ? 'Contact' : w; };
-for (const list of Object.values(data.lists || {})) for (const row of list) for (const k of Object.keys(row)) row[k] = scrub(row[k]);
-if (data.audit) data.audit.rawSources = data.audit.rawSources.map(([k, v]) => [scrub(k), v]);
+// walk every string in the output (lists, campaigns, audit, technician names...)
+const walk = (o) => { if (Array.isArray(o)) { for (let i = 0; i < o.length; i++) o[i] = typeof o[i] === 'string' ? scrub(o[i]) : (walk(o[i]), o[i]); } else if (o && typeof o === 'object') { for (const k of Object.keys(o)) { if (typeof o[k] === 'string') o[k] = scrub(o[k]); else walk(o[k]); } if (o.techs) for (const k of Object.keys(o.techs)) { const s = scrub(k); if (s !== k) { o.techs[s] = o.techs[k]; delete o.techs[k]; } } } };
+walk(data);
 if (scrubbed) console.log(`NOTE: removed ${scrubbed} emails or phone numbers from names and source labels`);
 const json = JSON.stringify(data);
 const bad = [];

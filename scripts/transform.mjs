@@ -173,7 +173,7 @@ export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
   const revBy = Object.fromEntries(SOURCES.map((n) => [n, zeros()]));
   const newBy = Object.fromEntries(SOURCES.map((n) => [n, zeros()]));
   const custCohorts = {}; // first-job month -> source -> {customers, jobs, revenue}
-  const how = { phone: 0, email: 0, name: 0, hcp_field: 0, not_captured: 0, existing: 0 };
+  const how = { phone: 0, email: 0, name: 0, hcp_field: 0, not_captured: 0, existing: 0, imported: 0 };
   const match = { phone: 0, email: 0, name: 0, none: 0, withGhlSource: 0 };
   const diag = { overlap: 0, lateOnly: 0 };
   const credited = [];
@@ -192,7 +192,7 @@ export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
       // prefer a contact with a real source, then the earliest
       const credits = (o) => o.ch !== 'Source not captured' && o.ch !== 'Text campaign' && !CH.find((x) => x.name === o.ch)?.exclude;
       cands.sort((a, b) => (credits(b[0]) - credits(a[0])) || (a[0].d < b[0].d ? -1 : 1));
-      if (cands.length) { [hit, via] = cands[0]; if (credits(hit)) src = hit.ch; }
+      if (cands.length) { [hit, via] = cands[0]; if (credits(hit)) src = hit.ch; else if (cands.some(([o]) => o.ch === 'Imported list')) { src = 'Existing customers'; via = 'imported'; } }
       if (!src) { const f = hcpChannel(c.leadSource || c.jobs.map((j) => j.lead_source || j.customer?.lead_source).find(Boolean)); if (f && f !== 'Text campaign') { src = f; via = 'hcp_field'; } }
       if (!src) { src = 'Source not captured'; via = hit ? via : 'not_captured'; }
     }
@@ -209,6 +209,12 @@ export function transform({ hcp, ghl, win, lsaSpend, today, notes = [] }) {
   credited.sort((a, b) => (a.first < b.first ? 1 : -1));
   const hcpWith = { phone: 0, email: 0, name: 0 }; for (const c of byCust.values()) { if (c.keys.ph.length) hcpWith.phone++; if (c.keys.em) hcpWith.email++; if (c.keys.nm) hcpWith.name++; }
   const ghlWith = { phone: 0, email: 0 }; for (const c of ghl.contacts || []) { if (phone10(c.phone)) ghlWith.phone++; if (email(c.email)) ghlWith.email++; }
+  { const pd = { leads: 0, inHcp: 0, before: 0, after: 0 };
+    for (const c of ghl.contacts || []) { const ch = contactChannel(c); if (!PAID.includes(ch)) continue; const d = localDay(c.dateAdded); if (!d || d < start) continue; pd.leads++;
+      const cid = phoneIdx.get(phone10(c.phone)) || emailIdx.get(email(c.email)); const cu = cid && byCust.get(cid); if (!cu) continue; pd.inHcp++;
+      const fj = [cu.created[0], cu.done[0]?.day].filter(Boolean).sort()[0]; if (fj && fj < d) pd.before++; else pd.after++; }
+    notes.push(`Paid leads since ${start}: ${pd.leads}. Found in HCP: ${pd.inHcp} (${pd.before} were already customers before the lead, ${pd.after} became customers after).`); }
+  notes.push(`Imported-list customers (old customer file, now counted as existing): ${how.imported}.`);
   notes.push(`Phone or email shared with a GHL contact: ${diag.overlap} new customers; ${diag.lateOnly} of them only have GHL contacts created after their first job (not credited).`);
   notes.push(`Matching: ${match.phone + match.email + match.name} of ${match.phone + match.email + match.name + match.none} new customers found in GHL (phone ${match.phone}, email ${match.email}, name ${match.name}); ${match.withGhlSource} of those had a source in GHL. HCP customers with phone ${hcpWith.phone}, email ${hcpWith.email}, of ${byCust.size}. GHL contacts with phone ${ghlWith.phone}, email ${ghlWith.email}, of ${(ghl.contacts || []).length}.`);
   notes.push(`Attribution (HCP customers since ${start}): matched to GHL by phone ${how.phone}, email ${how.email}, name ${how.name}; from the HCP lead source ${how.hcp_field}; no source ${how.not_captured}; existing customers ${how.existing}.`);
