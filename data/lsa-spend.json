@@ -1,4 +1,12 @@
 {
-  "_how": "Monthly LSA spend from LSA billing, the 'Home Services Ads activity' line. Not threshold charges. Format YYYY-MM: amount.",
-  "months": {}
+  "_how": "Monthly LSA spend from LSA billing, the 'Home Services Ads activity' line, minus invalid-activity credits applied back to their original month of service. Not threshold charges. Enter a month only after it closes.",
+  "months": {
+    "2026-07": 3642.6,
+    "2026-08": 759.39
+  },
+  "_log": {
+    "2026-07": "Activity $3,748.57 (41 leads) minus $105.97 invalid-activity credit issued in Aug for Jul service",
+    "2026-08": "Activity $759.39 (9 leads)",
+    "2026-06": "Needs the June activity line; a $403.26 invalid-activity credit for Jun was issued in Jul"
+  }
 }
